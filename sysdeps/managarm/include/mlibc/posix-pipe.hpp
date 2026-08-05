@@ -459,7 +459,7 @@ auto exchangeMsgsSync(HelHandle descriptor, Args &&...args) {
 }
 
 template <typename... Args>
-auto exchangeMsgsSyncCancellable(HelHandle descriptor, uint64_t cancelId, int fd, Args &&...args) {
+auto exchangeMsgsSyncCancellable(HelHandle descriptor, uint64_t cancelId, Args &&...args) {
 	auto results = helix_ng::createResultsTuple(args...);
 	auto actions = helix_ng::chainActionArrays(args...);
 
@@ -467,10 +467,9 @@ auto exchangeMsgsSyncCancellable(HelHandle descriptor, uint64_t cancelId, int fd
 
 	auto element = globalQueue.dequeueSingleUnlessCancelled();
 	if (!element) {
-		HEL_CHECK(helSyscall2(
+		HEL_CHECK(helSyscall1(
 			kHelCallSuper + posix::superCancel,
-			cancelId,
-			fd
+			cancelId
 		));
 		element = globalQueue.dequeueSingle();
 	}
