@@ -16,7 +16,9 @@ libc_sources += files(
 	'socket.cpp',
 	'sysdeps.cpp',
 	'time.cpp',
+	'thread.cpp',
 	'arch/x86_64/syscall.cpp',
+	'arch/x86_64/thread_entry.S',
 )
 
 if not no_headers
