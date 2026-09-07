@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <mlibc/all-sysdeps.hpp>
 #include <roxy/syscall.h>
+#include <stdio.h>
 #include <termios.h>
 
 namespace mlibc {
@@ -13,6 +14,9 @@ constexpr unsigned long tcsetsw = 0x5403;
 constexpr unsigned long tcsetsf = 0x5404;
 constexpr unsigned long tiocgwinsz = 0x5413;
 constexpr unsigned long tiocswinsz = 0x5414;
+// Linux TIOCGPTN/TIOCSPTLCK, matching kernel/syscall/.../ioctl/pty.rs and the Roxy ABI.
+constexpr unsigned long tiocgptn = 0x80045430;   // get pty slave number into the argument
+constexpr unsigned long tiocsptlck = 0x40045431; // lock/unlock pty slave (0 unlocks)
 
 int terminal_ioctl(int fd, unsigned long request, void *argument) {
 	int output;
@@ -64,6 +68,24 @@ int Sysdeps<Tcgetwinsize>::operator()(int fd, struct winsize *window_size) {
 
 int Sysdeps<Tcsetwinsize>::operator()(int fd, const struct winsize *window_size) {
 	return terminal_ioctl(fd, tiocswinsz, const_cast<struct winsize *>(window_size));
+}
+
+int Sysdeps<Ptsname>::operator()(int fd, char *buffer, size_t length) {
+	unsigned int number = 0;
+	if (int error = terminal_ioctl(fd, tiocgptn, &number))
+		return error;
+
+	int written = snprintf(buffer, length, "/dev/pts/%u", number);
+	if (written < 0)
+		return errno ? errno : EIO;
+	if (static_cast<size_t>(written) >= length)
+		return ERANGE;
+	return 0;
+}
+
+int Sysdeps<Unlockpt>::operator()(int fd) {
+	int unlock = 0;
+	return terminal_ioctl(fd, tiocsptlck, &unlock);
 }
 
 } // namespace mlibc
