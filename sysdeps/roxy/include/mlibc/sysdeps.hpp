@@ -107,6 +107,8 @@ struct RoxySysdepTags :
 	TimerGettime,
 	TimerGetoverrun,
 	TimerDelete,
+	GetItimer,
+	SetItimer,
 	Sigtimedwait,
 	Tgkill,
 	ThreadSigmask

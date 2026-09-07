@@ -5,6 +5,8 @@
 #include <signal.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <sys/time.h>
+#include <time.h>
 #include <unistd.h>
 
 namespace mlibc {
@@ -73,6 +75,26 @@ void stopHelper(roxyTimerHandle *h) {
 	// Wake the sigtimedwait with the internal signal so the helper observes `quit` promptly.
 	mlibc::sysdep<Tgkill>(static_cast<int>(mlibc::sysdep<GetPid>()), h->helperTid, roxyTimerSignal);
 	pthread_join(h->helper, nullptr);
+}
+
+// The single POSIX timer backing `ITIMER_REAL`. POSIX keeps exactly one per process, so we create
+// it lazily once and reuse it across setitimer/getitimer calls (never delete: arming with an
+// it_value of zero disarms without dropping the handle). Delivering SIGALRM matches alarm(3).
+timer_t realIntervalTimer = nullptr;
+pthread_mutex_t intervalTimerLock = PTHREAD_MUTEX_INITIALIZER;
+
+void itimervalToItimerspec(const struct itimerval *src, struct itimerspec *dst) {
+	dst->it_value.tv_sec = src->it_value.tv_sec;
+	dst->it_value.tv_nsec = src->it_value.tv_usec * 1000;
+	dst->it_interval.tv_sec = src->it_interval.tv_sec;
+	dst->it_interval.tv_nsec = src->it_interval.tv_usec * 1000;
+}
+
+void itimerspecToItimerval(const struct itimerspec *src, struct itimerval *dst) {
+	dst->it_value.tv_sec = src->it_value.tv_sec;
+	dst->it_value.tv_usec = src->it_value.tv_nsec / 1000;
+	dst->it_interval.tv_sec = src->it_interval.tv_sec;
+	dst->it_interval.tv_usec = src->it_interval.tv_nsec / 1000;
 }
 
 } // namespace
@@ -170,6 +192,60 @@ int Sysdeps<TimerDelete>::operator()(timer_t t) {
 
 	int error = syscall_error(roxy_syscall1(ROXY_SYS_TIMER_DELETE, h->kernel_id));
 	free(h);
+	return error;
+}
+
+int Sysdeps<GetItimer>::operator()(int which, struct itimerval *curr_value) {
+	if (which != ITIMER_REAL)
+		return EINVAL; // ITIMER_VIRTUAL/PROF need a CPU-time clock Roxy does not (yet) expose.
+
+	pthread_mutex_lock(&intervalTimerLock);
+	int error = 0;
+	if (realIntervalTimer) {
+		struct itimerspec cur = {};
+		error = mlibc::sysdep<TimerGettime>(realIntervalTimer, &cur);
+		if (!error)
+			itimerspecToItimerval(&cur, curr_value);
+	} else {
+		// A timer that was never armed reports zero remaining time.
+		curr_value->it_value.tv_sec = 0;
+		curr_value->it_value.tv_usec = 0;
+		curr_value->it_interval.tv_sec = 0;
+		curr_value->it_interval.tv_usec = 0;
+	}
+	pthread_mutex_unlock(&intervalTimerLock);
+	return error;
+}
+
+int Sysdeps<SetItimer>::operator()(
+    int which, const struct itimerval *new_value, struct itimerval *old_value) {
+	if (which != ITIMER_REAL)
+		return EINVAL; // ITIMER_VIRTUAL/PROF need a CPU-time clock Roxy does not (yet) expose.
+
+	pthread_mutex_lock(&intervalTimerLock);
+	int error = 0;
+
+	if (!realIntervalTimer) {
+		struct sigevent ev = {};
+		ev.sigev_notify = SIGEV_SIGNAL;
+		ev.sigev_signo = SIGALRM;
+		error = mlibc::sysdep<TimerCreate>(CLOCK_REALTIME, &ev, &realIntervalTimer);
+	}
+
+	if (!error && old_value) {
+		struct itimerspec cur = {};
+		error = mlibc::sysdep<TimerGettime>(realIntervalTimer, &cur);
+		if (!error)
+			itimerspecToItimerval(&cur, old_value);
+	}
+
+	if (!error && new_value) {
+		struct itimerspec nxt = {};
+		itimervalToItimerspec(new_value, &nxt);
+		error = mlibc::sysdep<TimerSettime>(realIntervalTimer, 0, &nxt, nullptr);
+	}
+
+	pthread_mutex_unlock(&intervalTimerLock);
 	return error;
 }
 
