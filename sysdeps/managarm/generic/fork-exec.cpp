@@ -88,7 +88,6 @@ int Sysdeps<Waitpid>::operator()(pid_t pid, int *status, int flags, struct rusag
 	auto [offer, send_head, recv_resp] = exchangeMsgsSyncCancellable(
 	    getPosixLane(),
 	    req.cancellation_id(),
-	    -1,
 	    helix_ng::offer(
 	        helix_ng::sendBragiHeadOnly(req, getSysdepsAllocator()), helix_ng::recvInline()
 	    )
