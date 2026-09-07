@@ -74,6 +74,11 @@ int Sysdeps<FutexWake>::operator()(int *pointer, bool all) {
 	));
 }
 
+pid_t Sysdeps<FutexTid>::operator()() {
+	// gettid() always succeeds.
+	return static_cast<pid_t>(roxy_syscall0(ROXY_SYS_GET_TID));
+}
+
 int Sysdeps<Open>::operator()(const char *path, int flags, mode_t mode, int *fd) {
 	auto result = roxy_syscall3(
 	    ROXY_SYS_OPEN,

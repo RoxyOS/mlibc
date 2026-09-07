@@ -99,9 +99,4 @@ pid_t Sysdeps<GetTid>::operator()() {
 	return static_cast<pid_t>(roxy_syscall0(ROXY_SYS_GET_TID));
 }
 
-pid_t Sysdeps<FutexTid>::operator()() {
-	// gettid() always succeeds.
-	return static_cast<pid_t>(roxy_syscall0(ROXY_SYS_GET_TID));
-}
-
 } // namespace mlibc
