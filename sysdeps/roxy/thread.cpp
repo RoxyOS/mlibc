@@ -77,7 +77,7 @@ int Sysdeps<Clone>::operator()(void *tcb, pid_t *pid_out, void *stack) {
 	(void)tcb;
 	auto result = roxy_syscall2(
 		ROXY_SYS_THREAD_CREATE,
-		reinterpret_cast<roxy_syscall_word_t>(
+		static_cast<roxy_syscall_word_t>(
 			reinterpret_cast<uintptr_t>(__mlibc_start_thread)
 		),
 		reinterpret_cast<roxy_syscall_word_t>(stack)
