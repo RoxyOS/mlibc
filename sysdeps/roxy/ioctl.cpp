@@ -17,6 +17,7 @@ constexpr unsigned long tiocswinsz = 0x5414;
 // Linux TIOCGPTN/TIOCSPTLCK, matching kernel/syscall/.../ioctl/pty.rs and the Roxy ABI.
 constexpr unsigned long tiocgptn = 0x80045430;   // get pty slave number into the argument
 constexpr unsigned long tiocsptlck = 0x40045431; // lock/unlock pty slave (0 unlocks)
+constexpr unsigned long tcflush = 0x540b;         // flush queued terminal input/output
 
 int terminal_ioctl(int fd, unsigned long request, void *argument) {
 	int output;
@@ -68,6 +69,11 @@ int Sysdeps<Tcgetwinsize>::operator()(int fd, struct winsize *window_size) {
 
 int Sysdeps<Tcsetwinsize>::operator()(int fd, const struct winsize *window_size) {
 	return terminal_ioctl(fd, tiocswinsz, const_cast<struct winsize *>(window_size));
+}
+
+int Sysdeps<Tcflush>::operator()(int fd, int queue_selector) {
+	// TCFLSH carries the queue selector (TCIFLUSH/TCOFLUSH/TCIOFLUSH) by value, not as a pointer.
+	return terminal_ioctl(fd, tcflush, reinterpret_cast<void *>(static_cast<long>(queue_selector)));
 }
 
 int Sysdeps<Ptsname>::operator()(int fd, char *buffer, size_t length) {

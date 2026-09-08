@@ -111,6 +111,7 @@ struct RoxySysdepTags :
 	SetItimer,
 	Ptsname,
 	Unlockpt,
+	Tcflush,
 	Sigtimedwait,
 	Tgkill,
 	ThreadSigmask
