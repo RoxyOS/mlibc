@@ -66,6 +66,7 @@ if not no_headers
 		'include/abi-bits/statvfs.h',
 		'include/abi-bits/ioctls.h',
 		'include/abi-bits/xattr.h',
+		'include/abi-bits/msg.h',
 		'include/abi-bits/random.h',
 		'include/abi-bits/rlim_t.h',
 		'include/abi-bits/sigval.h',
@@ -80,6 +81,8 @@ if not no_headers
 		'include/abi-bits/sig-limits.h',
 		'include/abi-bits/sigset_t.h',
 		'include/abi-bits/aio.h',
+		'include/abi-bits/sched_param.h',
+		'include/abi-bits/clone-flags.h',
 		subdir: 'abi-bits',
 		follow_symlinks: true
 	)

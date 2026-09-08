@@ -5,6 +5,7 @@
 #include <wchar.h>
 
 #include <bits/ensure.h>
+#include <internal-config.h>
 #include <mlibc/collation.hpp>
 #include <mlibc/strings.hpp>
 #include <mlibc/strtofp.hpp>
@@ -86,7 +87,7 @@ int __mlibc_strcmp_default(const char *a, const char *b) {
 	}
 }
 
-#if !defined(MLIBC_ARCH_HAS_STRCMP)
+#if !defined(MLIBC_ARCH_HAS_STRCMP) || !MLIBC_IFUNCS_SUPPORTED
 int strcmp(const char *a, const char *b) __attribute__((alias("__mlibc_strcmp_default")));
 #endif
 
@@ -190,17 +191,17 @@ size_t strspn(const char *s, const char *chrs) {
 	}
 }
 char *strstr(const char *s, const char *pattern) {
+	// The empty pattern matches at the beginning of every string, including
+	// the empty string.
+	if(!*pattern)
+		return const_cast<char *>(s);
+
 	for(size_t i = 0; s[i]; i++) {
-		bool found = true;
-		for(size_t j = 0; pattern[j]; j++) {
-			if(!pattern[j] || s[i + j] == pattern[j])
-				continue;
+		size_t j = 0;
+		while(pattern[j] && s[i + j] && s[i + j] == pattern[j])
+			j++;
 
-			found = false;
-			break;
-		}
-
-		if(found)
+		if(!pattern[j])
 			return const_cast<char *>(&s[i]);
 	}
 
@@ -247,9 +248,10 @@ char *strtok(char *__restrict s, const char *__restrict delimiter) {
 
 // This is a GNU extension.
 char *strchrnul(const char *s, int c) {
+	const unsigned char target = static_cast<unsigned char>(c);
 	size_t i = 0;
 	while(s[i]) {
-		if(s[i] == c)
+		if(static_cast<unsigned char>(s[i]) == target)
 			return const_cast<char *>(s + i);
 		i++;
 	}

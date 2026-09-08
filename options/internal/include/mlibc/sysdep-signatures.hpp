@@ -95,6 +95,10 @@ SYSDEP_FUNC(VmReadahead, void *pointer, size_t size);
 #endif /* MLIBC_BUILDING_RTLD */
 
 #if __MLIBC_POSIX_OPTION
+#include <abi-bits/msg.h>
+#include <abi-bits/sched_param.h>
+#include <abi-bits/shm.h>
+
 SYSDEP_FUNC(Readv, int fd, const struct iovec *iovs, int iovc, ssize_t *bytes_read);
 SYSDEP_FUNC(Writev, int fd, const struct iovec *iovs, int iovc, ssize_t *bytes_written);
 SYSDEP_FUNC(Pwrite, int fd, const void *buf, size_t n, off_t off, ssize_t *bytes_read);
@@ -327,6 +331,7 @@ SYSDEP_FUNC(Fsconfig, int fd, unsigned int cmd, const char *key, const void *val
 SYSDEP_FUNC(MoveMount, int from_dirfd, const char *from_path, int to_dirfd, const char *to_path, unsigned int flags);
 SYSDEP_FUNC(OpenTree, int dirfd, const char *path, unsigned int flags, int *outfd);
 SYSDEP_FUNC(CopyFileRange, int fd_in, off_t *off_in, int fd_out, off_t *off_out, size_t count, unsigned int flags, ssize_t *bytes_copied);
+SYSDEP_FUNC(Renameat2, int olddirfd, const char *old_path, int newdirfd, const char *new_path, unsigned int flags);
 #endif // __MLIBC_LINUX_OPTION
 
 #if __MLIBC_LINUX_EPOLL_OPTION

@@ -1,5 +1,6 @@
 project(
 	'mlibc',
+	version: '7.0.0',
 	default_options: [
 		'cpp_std=c++23',
 		'c_std=gnu11',
@@ -52,6 +53,7 @@ if cross_libc_ld_prefix == '' or build_machine.cpu_family() == host_machine.cpu_
 endif
 
 libgcc_dependency = get_option('libgcc_dependency')
+ifuncs_supported = false
 internal_conf = configuration_data()
 mlibc_conf = configuration_data()
 
@@ -64,6 +66,22 @@ if not headers_only
 	if cpp_compiler.get_id() == 'gcc' and not cpp_compiler.version().version_compare('>=13.1.0')
 		error('GCC version 13 or higher is required; found version ' + cpp_compiler.version())
 	endif
+
+	ifunc_check = '''
+	void my_func_impl() {}
+
+	extern "C" void (*resolver())() {
+		return my_func_impl;
+	}
+
+	void my_func() __attribute__((ifunc("resolver")));
+
+	int main() {
+		return 0;
+	}
+	'''
+
+	ifuncs_supported = cpp_compiler.compiles(ifunc_check, name: 'C++ compiler supports ifunc')
 
 	target_triple = run_command(c_compiler.cmd_array(), '-dumpmachine', check: true).stdout()
 	use_freestnd_hdrs = get_option('use_freestnd_hdrs').disable_auto_if(
@@ -108,6 +126,10 @@ if not headers_only
 	mlibc_link_args = ['-nostdlib']
 	add_project_arguments('-Werror=misleading-indentation', language: ['c', 'cpp'])
 	add_project_arguments('-fno-rtti', '-fno-exceptions', language: 'cpp')
+
+	# mlibc uses the priority range reserved for the C library, which GCC warns about.
+	add_project_arguments(cpp_compiler.get_supported_arguments('-Wno-prio-ctor-dtor'),
+		language: 'cpp')
 
 	if get_option('buildtype').startswith('debug')
 		add_project_arguments('-D__MLIBC_DEBUG', language : ['c', 'cpp'])
@@ -218,6 +240,7 @@ internal_conf.set10('MLIBC_MAP_DSO_SEGMENTS', false)
 internal_conf.set10('MLIBC_MMAP_ALLOCATE_DSO', false)
 internal_conf.set10('MLIBC_MAP_FILE_WINDOWS', false)
 internal_conf.set10('MLIBC_DEBUG_ALLOCATOR', get_option('debug_allocator'))
+internal_conf.set10('MLIBC_IFUNCS_SUPPORTED', ifuncs_supported)
 
 #----------------------------------------------------------------------------------------
 # Configuration based on sysdeps.
@@ -294,6 +317,13 @@ elif host_machine.system() == 'roxy'
 	rtld_include_dirs += include_directories('sysdeps/roxy/include')
 	libc_include_dirs += include_directories('sysdeps/roxy/include')
 	subdir('sysdeps/roxy')
+elif host_machine.system() == 'ethereal'
+	rtld_include_dirs += include_directories('sysdeps/ethereal/include')
+	libc_include_dirs += include_directories('sysdeps/ethereal/include')
+	internal_conf.set10('MLIBC_MAP_DSO_SEGMENTS', true)
+	internal_conf.set10('MLIBC_MMAP_ALLOCATE_DSO', false)
+	internal_conf.set10('MLIBC_MAP_FILE_WINDOWS', true)
+	subdir('sysdeps/ethereal')
 # ANCHOR: demo-sysdeps
 elif host_machine.system() == 'demo'
 	subdir('sysdeps/demo')
@@ -468,6 +498,8 @@ internal_sources = [
 	'options/internal/gcc/stack_protector.cpp',
 	'options/internal/gcc/guard-abi.cpp',
 	'options/internal/gcc-extra/cxxabi.cpp',
+	'options/internal' / host_machine.cpu_family() / 'assembly-asserts.cpp',
+	'options/internal' / host_machine.cpu_family() / 'atomics.cpp',
 	'options/internal' / host_machine.cpu_family() / 'setjmp.S',
 	'options/internal' / host_machine.cpu_family() / 'fenv.S',
 ]
@@ -518,6 +550,10 @@ if not no_headers
 		'options/internal/include/bits/getopt.h',
 		'options/internal/include/bits/reclen_t.h',
 		'options/internal/include/bits/timeval.h',
+		'options/internal/include/bits/pthread_types.h',
+		'options/internal/include/bits/pthread_attr_t.h',
+		'options/internal/include/bits/pthread_sizes.h',
+		'options/internal/include/bits/sysmacros.h',
 		subdir: 'bits'
 	)
 endif
@@ -539,6 +575,7 @@ rtld_sources += [
 
 rtld_dso_sources += ['options/rtld' / host_machine.cpu_family() / 'entry.S']
 
+static_cpp_args = []
 ld_cpp_args = []
 libc_cpp_args = []
 
@@ -608,29 +645,28 @@ if not headers_only
 
 	# Our libraries have different behaviour when built as static and shared libraries.
 	# Hence we need to rebuild the object files with a different define for each mode.
-	if library_type in ['static', 'both']
-		static_cpp_args = [
-			'-DMLIBC_STATIC_BUILD',
-		]
-		ld_static_lib = static_library(ld_library_name, rtld_sources,
-			name_prefix: '',
-			cpp_args: mlibc_c_args + ld_cpp_args + static_cpp_args,
-			link_args: mlibc_link_args,
-			include_directories: rtld_include_dirs,
-			dependencies: rtld_deps + rtlib_deps,
-			install: false
-		)
-		libc_static = static_library('c', libc_all_sources,
-			c_args: mlibc_c_args,
-			cpp_args: static_cpp_args + ['-fno-stack-protector', libc_cpp_args],
-			link_args: mlibc_link_args,
-			include_directories: libc_include_dirs,
-			dependencies: libc_deps + rtlib_deps,
-			link_with: [ld_static_lib],
-			link_whole: [libc_sublibs, ld_static_lib],
-			install: true
-		)
-	endif
+	static_cpp_args += [
+		'-DMLIBC_STATIC_BUILD',
+	]
+	ld_static_lib = static_library(ld_library_name, rtld_sources,
+		name_prefix: '',
+		cpp_args: mlibc_c_args + ld_cpp_args + static_cpp_args,
+		link_args: mlibc_link_args,
+		include_directories: rtld_include_dirs,
+		dependencies: rtld_deps + rtlib_deps,
+		install: false
+	)
+	libc_static = static_library('c', libc_all_sources,
+		c_args: mlibc_c_args,
+		cpp_args: static_cpp_args + ['-fno-stack-protector', libc_cpp_args],
+		link_args: mlibc_link_args,
+		include_directories: libc_include_dirs,
+		dependencies: libc_deps + rtlib_deps,
+		link_with: [ld_static_lib],
+		link_whole: [libc_sublibs, ld_static_lib],
+		install: true
+	)
+
 	if library_type in ['shared', 'both']
 		ld_shared_lib = shared_library(ld_library_name, rtld_sources + rtld_dso_sources,
 			name_prefix: '',

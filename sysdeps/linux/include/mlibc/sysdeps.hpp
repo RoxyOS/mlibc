@@ -166,7 +166,6 @@ struct LinuxSysdepTags :
 	Shmdt,
 	Shmget,
 	InetConfigured,
-	Nice,
 	Msgctl,
 	Msgget,
 	Msgrcv,
@@ -246,6 +245,7 @@ struct LinuxSysdepTags :
 	MoveMount,
 	OpenTree,
 	CopyFileRange,
+	Renameat2,
 #endif // __MLIBC_LINUX_OPTION
 
 #if __MLIBC_LINUX_EPOLL_OPTION
@@ -292,10 +292,8 @@ struct LinuxSysdepTags :
 #endif
 	Exit,
 	ThreadExit,
-#if __MLIBC_POSIX_OPTION
 	PrepareStack,
 	Clone,
-#endif // __MLIBC_POSIX_OPTION
 	FutexWait,
 	FutexWake,
 	Open,
