@@ -35,15 +35,10 @@ if not no_headers
 	)
 
 	install_headers(
+		'include/roxy/framebuffer-dev.h',
 		'include/roxy/keyboard-dev.h',
 		'include/roxy/mouse-dev.h',
 		subdir: 'roxy',
-	)
-
-	install_headers(
-		'include/linux/fb.h',
-		subdir: 'linux',
-		follow_symlinks: true,
 	)
 
 	install_headers(
