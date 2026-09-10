@@ -35,9 +35,13 @@ if not no_headers
 	)
 
 	install_headers(
+		'include/roxy/keyboard-dev.h',
+		'include/roxy/mouse-dev.h',
+		subdir: 'roxy',
+	)
+
+	install_headers(
 		'include/linux/fb.h',
-		'include/linux/input.h',
-		'include/linux/input-event-codes.h',
 		subdir: 'linux',
 		follow_symlinks: true,
 	)
