@@ -1,1 +1,1 @@
-../../../../abis/linux/gid_t.h
+../../../../abis/roxy/gid_t.h

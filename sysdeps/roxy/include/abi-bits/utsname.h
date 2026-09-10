@@ -1,1 +1,1 @@
-../../../../abis/linux/utsname.h
+../../../../abis/roxy/utsname.h
