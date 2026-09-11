@@ -175,6 +175,22 @@ int Sysdeps<ClockGet>::operator()(int clock, time_t *secs, long *nanos) {
 	return 0;
 }
 
+// Reports the interval in which a clock advances, in the same record `clock_get` fills. The kernel
+// advances its clocks one periodic-timer tick at a time, and returns EINVAL for an identifier it
+// does not provide, which lets a caller fall back to another clock.
+int Sysdeps<ClockGetres>::operator()(int clock, time_t *secs, long *nanos) {
+	roxy_clock_result result;
+	auto error = syscall_error(
+	    roxy_syscall2(ROXY_SYS_CLOCK_GETRES, clock, reinterpret_cast<long>(&result))
+	);
+	if (error)
+		return error;
+
+	*secs = result.seconds;
+	*nanos = result.nanoseconds;
+	return 0;
+}
+
 int Sysdeps<Sleep>::operator()(time_t *secs, long *nanos) {
 	struct timespec request = {
 	    .tv_sec = *secs,

@@ -92,6 +92,7 @@ typedef long roxy_syscall_word_t;
 #define ROXY_SYS_GET_TID 80
 #define ROXY_SYS_SIGTIMEDWAIT 81
 #define ROXY_SYS_TGKILL 82
+#define ROXY_SYS_CLOCK_GETRES 83
 
 typedef struct {
 	int64_t seconds;
