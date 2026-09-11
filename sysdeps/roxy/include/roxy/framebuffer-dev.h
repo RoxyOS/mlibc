@@ -6,11 +6,12 @@
 
 /* Roxy's framebuffer device protocol.
  *
- * `/dev/framebuffer` is a character device with exactly one request. `GET_INFO` reports the
- * layout and pixel format; the pixels themselves are reached by mapping the device with
- * `mmap(..., offset = 0)`, never by read/write or ioctl. The boot loader owns the mode, so there
- * is no mode-setting request: a client that wants to know whether a mode is usable compares it
- * against what `GET_INFO` reported.
+ * `/dev/framebuffer` is a character device with three requests. `GET_INFO` reports the layout and
+ * pixel format; the pixels themselves are reached by mapping the device with `mmap(..., offset =
+ * 0)`, never by read/write. `TAKE_CONTROL` and `RELEASE_CONTROL` hand the visible frame to the
+ * calling process and give it back, so the kernel console stops painting over the client's pixels
+ * while it owns them. The boot loader owns the mode, so there is no mode-setting request: a client
+ * that wants to know whether a mode is usable compares it against what `GET_INFO` reported.
  *
  * Pixels are always 32 bits wide and always in the RGB memory model, because the kernel publishes
  * the device only for a layout it validated in that form. That is why the record carries no
@@ -23,6 +24,24 @@
 
 /* Reports a `struct roxy_framebuffer_info` into the argument. */
 #define ROXY_FRAMEBUFFER_GET_INFO 0
+
+/* Takes exclusive control of the visible frame for the calling process.
+ *
+ * While a process holds the frame, the kernel console does not draw, so it cannot overwrite the
+ * client's pixels. Control belongs to the process rather than to one descriptor: any thread of the
+ * holder may release it, repeating the request from the holder succeeds so a client can assert
+ * ownership, and another process's request fails with `EBUSY`. The argument is ignored.
+ */
+#define ROXY_FRAMEBUFFER_TAKE_CONTROL 1
+
+/* Releases control of the visible frame taken with `TAKE_CONTROL`.
+ *
+ * Releasing resumes the console, which clears the screen and returns its cursor to the home cell:
+ * the console keeps no text buffer, so output written while the frame was held cannot be
+ * repainted. A process that does not hold the frame gets `EINVAL`; exiting without releasing
+ * releases the frame implicitly. The argument is ignored.
+ */
+#define ROXY_FRAMEBUFFER_RELEASE_CONTROL 2
 
 /* The framebuffer layout.
  *
