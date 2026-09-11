@@ -30,6 +30,13 @@ have to be judged by hand, one header at a time.
 A header that diverges carries a comment at the top of the file naming the reason for the
 divergence and, where one exists, the kernel-side record it has to match.
 
+An ABI-owned constant that a generic header also defines is made to win differently: the generic
+definition becomes a guarded fallback (`#ifndef`), so a sysdep that owns the value defines it first
+and every other sysdep keeps the fallback. `options/posix/include/termios.h` and
+`options/glibc/include/sys/ioctl.h` carry the guards for the ioctl numbers Roxy defines in
+`ioctls.h`; those two edits do not change behavior for any other sysdep, whose values match the
+fallbacks.
+
 ## Kernel contract
 
 A structure that crosses the syscall boundary is only half-defined here; its other half is a

@@ -1,6 +1,14 @@
 #ifndef _ABIBITS_TERMIOS_H
 #define _ABIBITS_TERMIOS_H
 
+/*
+ * Roxy's terminal ioctl numbers live in <abi-bits/ioctls.h>. Include them here so that a
+ * translation unit which reaches TIOCGWINSZ and friends through <termios.h> alone - the way it
+ * would on Linux - sees Roxy's numbers rather than the fallback definitions at the end of
+ * options/posix/include/termios.h.
+ */
+#include <abi-bits/ioctls.h>
+
 typedef unsigned char cc_t;
 typedef unsigned int speed_t;
 typedef unsigned int tcflag_t;

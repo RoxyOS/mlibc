@@ -29,12 +29,6 @@ if not no_headers
 	)
 
 	install_headers(
-		'include/asm-generic/ioctl.h',
-		subdir: 'asm-generic',
-		follow_symlinks: true,
-	)
-
-	install_headers(
 		'include/roxy/framebuffer-dev.h',
 		'include/roxy/keyboard-dev.h',
 		'include/roxy/mouse-dev.h',

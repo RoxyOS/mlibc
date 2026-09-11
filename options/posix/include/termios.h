@@ -100,12 +100,25 @@ void cfmakeraw(struct termios *__tios);
 #endif /* !__MLIBC_ABI_ONLY */
 
 #if defined(_DEFAULT_SOURCE)
+/* Fallbacks only: an ABI that owns an ioctl number defines it in <abi-bits/ioctls.h> first. */
+#ifndef TIOCSCTTY
 #define TIOCSCTTY 0x540E
+#endif /* !TIOCSCTTY */
+#ifndef TIOCGPGRP
 #define TIOCGPGRP 0x540F
+#endif /* !TIOCGPGRP */
+#ifndef TIOCSPGRP
 #define TIOCSPGRP 0x5410
+#endif /* !TIOCSPGRP */
+#ifndef TIOCGWINSZ
 #define TIOCGWINSZ 0x5413
+#endif /* !TIOCGWINSZ */
+#ifndef TIOCSWINSZ
 #define TIOCSWINSZ 0x5414
+#endif /* !TIOCSWINSZ */
+#ifndef TIOCGSID
 #define TIOCGSID 0x5429
+#endif /* !TIOCGSID */
 #endif /* defined(_DEFAULT_SOURCE) */
 
 #ifdef __cplusplus

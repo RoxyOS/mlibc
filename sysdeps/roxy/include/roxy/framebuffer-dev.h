@@ -1,12 +1,14 @@
 #ifndef _ROXY_FRAMEBUFFER_DEV_H
 #define _ROXY_FRAMEBUFFER_DEV_H
 
+#include <abi-bits/ioctls.h>
 #include <stddef.h>
 #include <stdint.h>
 
 /* Roxy's framebuffer device protocol.
  *
- * `/dev/framebuffer` is a character device with three requests. `GET_INFO` reports the layout and
+ * `/dev/framebuffer` is a character device with three requests, numbered inside the framebuffer
+ * block of the Roxy ioctl space (see <abi-bits/ioctls.h>). `GET_INFO` reports the layout and
  * pixel format; the pixels themselves are reached by mapping the device with `mmap(..., offset =
  * 0)`, never by read/write. `TAKE_CONTROL` and `RELEASE_CONTROL` hand the visible frame to the
  * calling process and give it back, so the kernel console stops painting over the client's pixels
@@ -23,7 +25,7 @@
  */
 
 /* Reports a `struct roxy_framebuffer_info` into the argument. */
-#define ROXY_FRAMEBUFFER_GET_INFO 0
+#define ROXY_FRAMEBUFFER_GET_INFO ROXY_IOCTL_FRAMEBUFFER
 
 /* Takes exclusive control of the visible frame for the calling process.
  *
@@ -32,7 +34,7 @@
  * holder may release it, repeating the request from the holder succeeds so a client can assert
  * ownership, and another process's request fails with `EBUSY`. The argument is ignored.
  */
-#define ROXY_FRAMEBUFFER_TAKE_CONTROL 1
+#define ROXY_FRAMEBUFFER_TAKE_CONTROL (ROXY_IOCTL_FRAMEBUFFER + 1)
 
 /* Releases control of the visible frame taken with `TAKE_CONTROL`.
  *
@@ -41,7 +43,7 @@
  * repainted. A process that does not hold the frame gets `EINVAL`; exiting without releasing
  * releases the frame implicitly. The argument is ignored.
  */
-#define ROXY_FRAMEBUFFER_RELEASE_CONTROL 2
+#define ROXY_FRAMEBUFFER_RELEASE_CONTROL (ROXY_IOCTL_FRAMEBUFFER + 2)
 
 /* The framebuffer layout.
  *

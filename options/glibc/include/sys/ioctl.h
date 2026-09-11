@@ -26,7 +26,10 @@ int ioctl(int __fd, unsigned long __request, ...);
 #define TIOCMBIC 0x5417
 
 #define FIONREAD 0x541B
+/* Fallback only: an ABI that owns FIONBIO defines it in <abi-bits/ioctls.h> first. */
+#ifndef FIONBIO
 #define FIONBIO 0x5421
+#endif /* !FIONBIO */
 #define FIONCLEX 0x5450
 #define FIOCLEX 0x5451
 
