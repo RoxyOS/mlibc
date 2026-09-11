@@ -1,6 +1,9 @@
+# Roxy does not take mlibc's GNU-compatible API layer. The pieces the userland needs come from
+# these sysdeps (ioctl() and <sys/ioctl.h>, <paths.h>) or from the package's own capability tests,
+# so nothing here may depend on the option.
 sysdep_supported_options = {
 	'posix': true,
-	'glibc': true,
+	'glibc': false,
 }
 
 rtld_sources += files(
@@ -14,6 +17,7 @@ libc_sources += files(
 	'ioctl.cpp',
 	'signal.cpp',
 	'socket.cpp',
+	'sys-ioctl.cpp',
 	'sysdeps.cpp',
 	'time.cpp',
 	'thread.cpp',
@@ -23,6 +27,11 @@ libc_sources += files(
 
 if not no_headers
 	install_headers(
+		'include/paths.h',
+	)
+
+	install_headers(
+		'include/sys/ioctl.h',
 		'include/sys/sysmacros.h',
 		subdir: 'sys',
 		follow_symlinks: true,
