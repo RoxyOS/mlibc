@@ -32,7 +32,6 @@ if not no_headers
 
 	install_headers(
 		'include/sys/ioctl.h',
-		'include/sys/sysmacros.h',
 		subdir: 'sys',
 		follow_symlinks: true,
 	)
