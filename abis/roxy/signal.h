@@ -24,84 +24,42 @@
 #define POLL_HUP 6
 #endif
 
-/* struct taken from musl. */
-
+/*
+ * The information record handed to a signal handler.
+ *
+ * The record is flat rather than a union overlay: a source fills the fields it has, so every
+ * member's offset is a constant instead of an overlay that `si_code` selects. Members keep their
+ * POSIX names, so ported handlers compile unchanged. `si_overrun` and `si_value` keep the offsets
+ * the Linux-shaped record gave them.
+ *
+ * The kernel side is `kernel/process/src/signal_frame`, which builds the record written on a
+ * signal frame.
+ */
 typedef struct {
-	int si_signo, si_errno, si_code;
-	union {
-		char __pad[128 - 2*sizeof(int) - sizeof(long)];
-		struct {
-			union {
-				struct {
-					pid_t si_pid;
-					uid_t si_uid;
-				} __piduid;
-				struct {
-					int si_timerid;
-					int si_overrun;
-				} __timer;
-			} __first;
-			union {
-				union sigval si_value;
-				struct {
-					int si_status;
-					clock_t si_utime, si_stime;
-				} __sigchld;
-			} __second;
-		} __si_common;
-		struct {
-			void *si_addr;
-			short si_addr_lsb;
-			union {
-				struct {
-					void *si_lower;
-					void *si_upper;
-				} __addr_bnd;
-				unsigned si_pkey;
-			} __first;
-		} __sigfault;
-		struct {
-			long si_band;
-			int si_fd;
-		} __sigpoll;
-		struct {
-			void *si_call_addr;
-			int si_syscall;
-			unsigned si_arch;
-		} __sigsys;
-	} __si_fields;
+	int si_signo;
+	int si_code;
+	pid_t si_pid;
+	uid_t si_uid;
+	int si_status;
+	int si_overrun;
+	union sigval si_value;
+	void *si_addr;
 } siginfo_t;
-#define si_pid     __si_fields.__si_common.__first.__piduid.si_pid
-#define si_uid     __si_fields.__si_common.__first.__piduid.si_uid
-#define si_status  __si_fields.__si_common.__second.__sigchld.si_status
-#define si_utime   __si_fields.__si_common.__second.__sigchld.si_utime
-#define si_stime   __si_fields.__si_common.__second.__sigchld.si_stime
-#define si_value   __si_fields.__si_common.__second.si_value
-#define si_addr    __si_fields.__sigfault.si_addr
-#define si_addr_lsb __si_fields.__sigfault.si_addr_lsb
-#define si_lower   __si_fields.__sigfault.__first.__addr_bnd.si_lower
-#define si_upper   __si_fields.__sigfault.__first.__addr_bnd.si_upper
-#define si_pkey    __si_fields.__sigfault.__first.si_pkey
-#define si_band    __si_fields.__sigpoll.si_band
-#define si_fd      __si_fields.__sigpoll.si_fd
-#define si_timerid __si_fields.__si_common.__first.__timer.si_timerid
-#define si_overrun __si_fields.__si_common.__first.__timer.si_overrun
-#define si_ptr     si_value.sival_ptr
-#define si_int     si_value.sival_int
-#define si_call_addr __si_fields.__sigsys.si_call_addr
-#define si_syscall __si_fields.__sigsys.si_syscall
-#define si_arch    __si_fields.__sigsys.si_arch
+
+/* Payload accessors glibc exposes for the `sigval` union. */
+#define si_ptr si_value.sival_ptr
+#define si_int si_value.sival_int
 
 #ifdef __cplusplus
 /* Contract with the kernel signal-frame writer: the `siginfo_t` layout must stay byte-for-byte
-   compatible with kernel/process/src/signal_frame. `si_value` and `si_overrun` are the POSIX
-   timer notification fields the kernel populates for SI_TIMER. The asserted offsets are LP64
-   (x86_64) values, which is the only ABI Roxy targets. */
+   compatible with kernel/process/src/signal_frame, whose own assertions pin the same offsets. The
+   asserted values are LP64 (x86_64) offsets, which is the only ABI Roxy targets. */
 #if defined(__x86_64__)
-static_assert(sizeof(siginfo_t) == 128);
-static_assert(__builtin_offsetof(siginfo_t, si_pid) == 16);
-static_assert(__builtin_offsetof(siginfo_t, si_value) == 24);
+static_assert(sizeof(siginfo_t) == 40);
+static_assert(__builtin_offsetof(siginfo_t, si_pid) == 8);
 static_assert(__builtin_offsetof(siginfo_t, si_overrun) == 20);
+static_assert(__builtin_offsetof(siginfo_t, si_value) == 24);
+static_assert(__builtin_offsetof(siginfo_t, si_addr) == 32);
 #endif
 #endif
 
