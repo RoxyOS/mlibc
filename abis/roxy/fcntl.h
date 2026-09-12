@@ -44,63 +44,71 @@
 #define O_SEARCH O_PATH
 #define O_TTY_INIT 0
 
-#define F_DUPFD  0
-#define F_GETFD  1
-#define F_SETFD  2
-#define F_GETFL  3
-#define F_SETFL  4
+/*
+ * The fcntl command space.
+ *
+ * Commands carry Roxy's own numbers, laid out from ROXY_F_CMD_BASE so that a command below the
+ * base cannot be one of ours: a program compiled against a foreign numbering (Linux's F_GETFD
+ * is 1, F_DUPFD_CLOEXEC is 1030) hands the kernel a value it recognizes and reports, instead of
+ * one that silently aliases an unrelated Roxy command.
+ *
+ * Every command this kernel does not implement is defined to F_UNSUPPORTED, which keeps ported
+ * sources compiling while making the call unmissable at runtime. Because they all share one
+ * value, two unsupported commands cannot appear as distinct `case` labels in a switch; no ported
+ * source needs that, since none of them is served.
+ *
+ * The kernel side of this contract is kernel/syscall/src/syscalls/fcntl.rs.
+ */
+#define ROXY_F_CMD_BASE 0x1000u
+#define F_UNSUPPORTED 0x100u
 
-#define F_SETOWN 8
-#define F_GETOWN 9
-#define F_SETSIG 10
-#define F_GETSIG 11
+/* Commands the kernel implements; a value is the base plus the command's index. */
+#define F_DUPFD (ROXY_F_CMD_BASE + 0)
+#define F_GETFD (ROXY_F_CMD_BASE + 1)
+#define F_SETFD (ROXY_F_CMD_BASE + 2)
+#define F_GETFL (ROXY_F_CMD_BASE + 3)
+#define F_SETFL (ROXY_F_CMD_BASE + 4)
+#define F_DUPFD_CLOEXEC (ROXY_F_CMD_BASE + 5)
 
-#if __INTPTR_WIDTH__ == 64
+/* Commands the kernel does not implement. The `64` spellings are kept because
+   ported sources name them explicitly. */
+#define F_GETLK64 F_UNSUPPORTED
+#define F_SETLK64 F_UNSUPPORTED
+#define F_SETLKW64 F_UNSUPPORTED
+#define F_GETLK F_UNSUPPORTED
+#define F_SETLK F_UNSUPPORTED
+#define F_SETLKW F_UNSUPPORTED
+#define F_SETOWN F_UNSUPPORTED
+#define F_GETOWN F_UNSUPPORTED
+#define F_SETSIG F_UNSUPPORTED
+#define F_GETSIG F_UNSUPPORTED
+#define F_SETOWN_EX F_UNSUPPORTED
+#define F_GETOWN_EX F_UNSUPPORTED
+#define F_GETOWNER_UIDS F_UNSUPPORTED
+#define F_SETLEASE F_UNSUPPORTED
+#define F_GETLEASE F_UNSUPPORTED
+#define F_NOTIFY F_UNSUPPORTED
+#define F_DUPFD_QUERY F_UNSUPPORTED
+#define F_SETPIPE_SZ F_UNSUPPORTED
+#define F_GETPIPE_SZ F_UNSUPPORTED
+#define F_ADD_SEALS F_UNSUPPORTED
+#define F_GET_SEALS F_UNSUPPORTED
+#define F_OFD_GETLK F_UNSUPPORTED
+#define F_OFD_SETLK F_UNSUPPORTED
+#define F_OFD_SETLKW F_UNSUPPORTED
 
-#define F_GETLK64 5
-#define F_SETLK64 6
-#define F_SETLKW64 7
-
-#else /* __INTPTR_WIDTH__ == 64 */
-
-#define F_GETLK64 12
-#define F_SETLK64 13
-#define F_SETLKW64 14
-
-#endif
-
-#define F_GETLK F_GETLK64
-#define F_SETLK F_SETLK64
-#define F_SETLKW F_SETLKW64
-
-#define F_SETOWN_EX 15
-#define F_GETOWN_EX 16
-
-#define F_GETOWNER_UIDS 17
-
-#define F_SETLEASE 1024
-#define F_GETLEASE 1025
-#define F_NOTIFY 1026
-#define F_DUPFD_QUERY 1027
-#define F_DUPFD_CLOEXEC 1030
-#define F_SETPIPE_SZ 1031
-#define F_GETPIPE_SZ 1032
-#define F_ADD_SEALS 1033
-#define F_GET_SEALS 1034
-
+/* Arguments of unsupported commands; the kernel never interprets them. */
 #define F_SEAL_SEAL 0x0001
 #define F_SEAL_SHRINK 0x0002
 #define F_SEAL_GROW 0x0004
 #define F_SEAL_WRITE 0x0008
 
-#define F_OFD_GETLK 36
-#define F_OFD_SETLK 37
-#define F_OFD_SETLKW 38
-
+/* `struct flock.l_type` values; record locking itself is unsupported. */
 #define F_RDLCK 0
 #define F_WRLCK 1
 #define F_UNLCK 2
 
+/* Argument bit of the supported F_GETFD/F_SETFD. */
 #define FD_CLOEXEC 1
 
 #define AT_FDCWD -100
