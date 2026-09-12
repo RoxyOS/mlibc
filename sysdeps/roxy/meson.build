@@ -6,21 +6,41 @@ sysdep_supported_options = {
 	'glibc': false,
 }
 
+# A file is listed here when it implements a sysdep that the dynamic loader or the rtld-shared code
+# references, so that ld.so can link it. A domain file listed here contributes its other sysdeps to
+# ld.so as well; the few extra bytes are worth keeping the sysdeps grouped by domain.
+# sysdeps/tcb.cpp is kept apart from thread.cpp because thread.cpp carries pthread code the loader
+# cannot link.
 rtld_sources += files(
-	'sysdeps.cpp',
+	'sysdeps/diag.cpp',
+	'sysdeps/filesystem.cpp',
+	'sysdeps/futex.cpp',
+	'sysdeps/io.cpp',
+	'sysdeps/memory.cpp',
+	'sysdeps/process.cpp',
+	'sysdeps/tcb.cpp',
 	'arch/x86_64/syscall.cpp',
 )
 
 libc_sources += files(
 	'entry.cpp',
-	'filesystem.cpp',
-	'ioctl.cpp',
-	'signal.cpp',
-	'socket.cpp',
-	'sys-ioctl.cpp',
-	'sysdeps.cpp',
-	'time.cpp',
-	'thread.cpp',
+	'sysdeps/credentials.cpp',
+	'sysdeps/diag.cpp',
+	'sysdeps/filesystem.cpp',
+	'sysdeps/futex.cpp',
+	'sysdeps/io.cpp',
+	'sysdeps/ioctl.cpp',
+	'sysdeps/memory.cpp',
+	'sysdeps/poll.cpp',
+	'sysdeps/process.cpp',
+	'sysdeps/signal.cpp',
+	'sysdeps/socket.cpp',
+	'sysdeps/sys-ioctl.cpp',
+	'sysdeps/system.cpp',
+	'sysdeps/tcb.cpp',
+	'sysdeps/thread.cpp',
+	'sysdeps/time.cpp',
+	'sysdeps/tty.cpp',
 	'arch/x86_64/syscall.cpp',
 	'arch/x86_64/thread_entry.S',
 )

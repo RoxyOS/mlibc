@@ -1,13 +1,7 @@
 #include <mlibc/all-sysdeps.hpp>
 #include <roxy/syscall.h>
 
-namespace {
-
-int syscall_error(long result) {
-	return result < 0 ? static_cast<int>(-result) : 0;
-}
-
-} // namespace
+#include "errors.hpp"
 
 namespace mlibc {
 

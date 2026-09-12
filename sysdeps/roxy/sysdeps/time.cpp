@@ -9,12 +9,11 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "errors.hpp"
+
 namespace mlibc {
 
 namespace {
-int syscall_error(long result) {
-	return result < 0 ? static_cast<int>(-result) : 0;
-}
 
 // The realtime signal used to deliver a `SIGEV_THREAD` expiration to its helper thread. Roxy
 // reserves this number for this mechanism; the helper thread alone blocks it, and the kernel
@@ -98,6 +97,49 @@ void itimerspecToItimerval(const struct itimerspec *src, struct itimerval *dst) 
 }
 
 } // namespace
+
+int Sysdeps<ClockGet>::operator()(int clock, time_t *secs, long *nanos) {
+	roxy_clock_result result;
+	auto error =
+	    syscall_error(roxy_syscall2(ROXY_SYS_CLOCK_GET, clock, reinterpret_cast<long>(&result)));
+	if (error)
+		return error;
+
+	*secs = result.seconds;
+	*nanos = result.nanoseconds;
+	return 0;
+}
+
+// Reports the interval in which a clock advances, in the same record `clock_get` fills. The kernel
+// advances its clocks one periodic-timer tick at a time, and returns EINVAL for an identifier it
+// does not provide, which lets a caller fall back to another clock.
+int Sysdeps<ClockGetres>::operator()(int clock, time_t *secs, long *nanos) {
+	roxy_clock_result result;
+	auto error = syscall_error(
+	    roxy_syscall2(ROXY_SYS_CLOCK_GETRES, clock, reinterpret_cast<long>(&result))
+	);
+	if (error)
+		return error;
+
+	*secs = result.seconds;
+	*nanos = result.nanoseconds;
+	return 0;
+}
+
+int Sysdeps<Sleep>::operator()(time_t *secs, long *nanos) {
+	struct timespec request = {
+	    .tv_sec = *secs,
+	    .tv_nsec = *nanos,
+	};
+
+	auto error = syscall_error(
+	    roxy_syscall1(ROXY_SYS_SLEEP, reinterpret_cast<long>(&request))
+	);
+	if(error)
+		return error;
+
+	return 0;
+}
 
 int Sysdeps<TimerCreate>::operator()(clockid_t clk, struct sigevent *evp, timer_t *res) {
 	struct sigevent local{};

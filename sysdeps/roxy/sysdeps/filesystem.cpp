@@ -1,9 +1,11 @@
 #include <dirent.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <mlibc/all-sysdeps.hpp>
 #include <roxy/syscall.h>
 
 #include <stddef.h>
+#include <stdint.h>
 
 static_assert(sizeof(roxy_dirent) == sizeof(struct dirent));
 static_assert(offsetof(roxy_dirent, inode) == offsetof(struct dirent, d_ino));
@@ -189,6 +191,74 @@ int Sysdeps<Fsync>::operator()(int fd) {
 
 int Sysdeps<Ftruncate>::operator()(int fd, size_t size) {
 	auto result = roxy_syscall2(ROXY_SYS_FTRUNCATE, fd, size);
+
+	return result < 0 ? static_cast<int>(-result) : 0;
+}
+
+int Sysdeps<Stat>::operator()(
+	fsfd_target target,
+	int fd,
+	const char *path,
+	int flags,
+	struct stat *output
+) {
+	roxy_stat_result stat_result;
+	auto result = roxy_syscall5(
+	    ROXY_SYS_STAT,
+	    static_cast<long>(target),
+	    fd,
+	    reinterpret_cast<long>(path),
+	    flags,
+	    reinterpret_cast<long>(&stat_result)
+	);
+	if(result < 0)
+		return static_cast<int>(-result);
+	if(stat_result.size > INT64_MAX)
+		return EOVERFLOW;
+
+	*output = {};
+	output->st_ino = stat_result.file_id;
+	output->st_mode = stat_result.mode;
+	output->st_nlink = stat_result.hard_links;
+	output->st_size = stat_result.size;
+	output->st_blksize = stat_result.block_size;
+	output->st_blocks = stat_result.blocks;
+	return 0;
+}
+
+int Sysdeps<Seek>::operator()(int fd, off_t offset, int whence, off_t *new_offset) {
+	auto result = roxy_syscall3(ROXY_SYS_SEEK, fd, offset, whence);
+	if(result < 0)
+		return static_cast<int>(-result);
+
+	*new_offset = result;
+	return 0;
+}
+
+int Sysdeps<Umask>::operator()(mode_t mode, mode_t *old) {
+	// The kernel stores the new mask and returns the previous one.
+	auto result = roxy_syscall1(ROXY_SYS_UMASK, mode);
+	if(result < 0)
+		return static_cast<int>(-result);
+
+	*old = static_cast<mode_t>(result);
+	return 0;
+}
+
+int Sysdeps<Chmod>::operator()(const char *pathname, mode_t mode) {
+	auto result = roxy_syscall2(ROXY_SYS_CHMOD, reinterpret_cast<long>(pathname), mode);
+
+	return result < 0 ? static_cast<int>(-result) : 0;
+}
+
+int Sysdeps<Fchmod>::operator()(int fd, mode_t mode) {
+	auto result = roxy_syscall2(ROXY_SYS_FCHMOD, fd, mode);
+
+	return result < 0 ? static_cast<int>(-result) : 0;
+}
+
+int Sysdeps<Access>::operator()(const char *pathname, int mode) {
+	auto result = roxy_syscall2(ROXY_SYS_ACCESS, reinterpret_cast<long>(pathname), mode);
 
 	return result < 0 ? static_cast<int>(-result) : 0;
 }
