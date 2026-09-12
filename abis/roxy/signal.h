@@ -46,10 +46,6 @@ typedef struct {
 	void *si_addr;
 } siginfo_t;
 
-/* Payload accessors glibc exposes for the `sigval` union. */
-#define si_ptr si_value.sival_ptr
-#define si_int si_value.sival_int
-
 #ifdef __cplusplus
 /* Contract with the kernel signal-frame writer: the `siginfo_t` layout must stay byte-for-byte
    compatible with kernel/process/src/signal_frame, whose own assertions pin the same offsets. The
