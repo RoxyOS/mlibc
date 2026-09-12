@@ -9,10 +9,10 @@ namespace mlibc {
 
 int Sysdeps<AnonAllocate>::operator()(size_t size, void **pointer) {
 	auto result = roxy_syscall1(ROXY_SYS_ANON_ALLOCATE, size);
-	if(result < 0)
-		return static_cast<int>(-result);
+	if(result.error)
+		return static_cast<int>(result.error);
 
-	*pointer = reinterpret_cast<void *>(result);
+	*pointer = reinterpret_cast<void *>(result.value);
 	return 0;
 }
 
@@ -40,10 +40,10 @@ int Sysdeps<VmMap>::operator()(
 	    fd,
 	    offset
 	);
-	if(result < 0)
-		return static_cast<int>(-result);
+	if(result.error)
+		return static_cast<int>(result.error);
 
-	*window = reinterpret_cast<void *>(result);
+	*window = reinterpret_cast<void *>(result.value);
 	return 0;
 }
 

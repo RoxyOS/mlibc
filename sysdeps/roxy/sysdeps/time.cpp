@@ -174,14 +174,14 @@ int Sysdeps<TimerCreate>::operator()(clockid_t clk, struct sigevent *evp, timer_
 		kevent.sigev_notify_thread_id = h->helperTid;
 
 		int32_t kernelId = 0;
-		long result = roxy_syscall3(
+		auto result = roxy_syscall3(
 		    ROXY_SYS_TIMER_CREATE, clk, reinterpret_cast<long>(&kevent),
 		    reinterpret_cast<long>(&kernelId)
 		);
-		if (result < 0) {
+		if (result.error) {
 			stopHelper(h);
 			free(h);
-			return static_cast<int>(-result);
+			return static_cast<int>(result.error);
 		}
 		h->kernel_id = kernelId;
 		*res = reinterpret_cast<timer_t>(h);
@@ -191,13 +191,13 @@ int Sysdeps<TimerCreate>::operator()(clockid_t clk, struct sigevent *evp, timer_
 	// SIGEV_NONE and SIGEV_SIGNAL go straight to the kernel timer with the caller's sigevent
 	// (null means the SIGALRM default).
 	int32_t kernelId = 0;
-	long result = roxy_syscall3(
+	auto result = roxy_syscall3(
 	    ROXY_SYS_TIMER_CREATE, clk, reinterpret_cast<long>(evp),
 	    reinterpret_cast<long>(&kernelId)
 	);
-	if (result < 0) {
+	if (result.error) {
 		free(h);
-		return static_cast<int>(-result);
+		return static_cast<int>(result.error);
 	}
 	h->kernel_id = kernelId;
 	*res = reinterpret_cast<timer_t>(h);

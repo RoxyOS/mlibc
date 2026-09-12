@@ -82,21 +82,21 @@ int Sysdeps<Clone>::operator()(void *tcb, pid_t *pid_out, void *stack) {
 		),
 		reinterpret_cast<roxy_syscall_word_t>(stack)
 	);
-	if (result < 0)
-		return static_cast<int>(-result);
+	if (result.value < 0)
+		return static_cast<int>(result.error);
 
-	*pid_out = static_cast<pid_t>(result);
+	*pid_out = static_cast<pid_t>(result.value);
 	return 0;
 }
 
 void Sysdeps<ThreadExit>::operator()() {
-	roxy_syscall0(ROXY_SYS_THREAD_EXIT);
+	static_cast<void>(roxy_syscall0(ROXY_SYS_THREAD_EXIT));
 	__builtin_trap();
 }
 
 pid_t Sysdeps<GetTid>::operator()() {
 	// gettid() always succeeds.
-	return static_cast<pid_t>(roxy_syscall0(ROXY_SYS_GET_TID));
+	return static_cast<pid_t>(roxy_syscall0(ROXY_SYS_GET_TID).value);
 }
 
 } // namespace mlibc

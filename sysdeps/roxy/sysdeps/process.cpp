@@ -8,21 +8,23 @@
 namespace mlibc {
 
 pid_t Sysdeps<GetPid>::operator()() {
-	return static_cast<pid_t>(roxy_syscall0(ROXY_SYS_GETPID));
+	// The kernel cannot fail this.
+	return static_cast<pid_t>(roxy_syscall0(ROXY_SYS_GETPID).value);
 }
 
 pid_t Sysdeps<GetPpid>::operator()() {
-	return static_cast<pid_t>(roxy_syscall0(ROXY_SYS_GETPPID));
+	// The kernel cannot fail this.
+	return static_cast<pid_t>(roxy_syscall0(ROXY_SYS_GETPPID).value);
 }
 
 int Sysdeps<Fork>::operator()(pid_t *child) {
 	auto result = roxy_syscall1(ROXY_SYS_FORK, 0);
-	if(result < 0)
-		return static_cast<int>(-result);
-	if(result > INT32_MAX)
+	if(result.error)
+		return static_cast<int>(result.error);
+	if(result.value > INT32_MAX)
 		return EOVERFLOW;
 
-	*child = static_cast<pid_t>(result);
+	*child = static_cast<pid_t>(result.value);
 	return 0;
 }
 
@@ -40,10 +42,10 @@ int Sysdeps<Waitpid>::operator()(
 	    flags,
 	    reinterpret_cast<long>(ru)
 	);
-	if(result < 0)
-		return static_cast<int>(-result);
+	if(result.error)
+		return static_cast<int>(result.error);
 
-	*ret_pid = static_cast<pid_t>(result);
+	*ret_pid = static_cast<pid_t>(result.value);
 	return 0;
 }
 
@@ -67,19 +69,19 @@ int Sysdeps<SetPgid>::operator()(pid_t pid, pid_t pgid) {
 
 int Sysdeps<GetPgid>::operator()(pid_t pid, pid_t *pgid) {
 	auto result = roxy_syscall1(ROXY_SYS_GET_PGID, pid);
-	if(result < 0)
-		return static_cast<int>(-result);
+	if(result.error)
+		return static_cast<int>(result.error);
 
-	*pgid = static_cast<pid_t>(result);
+	*pgid = static_cast<pid_t>(result.value);
 	return 0;
 }
 
 int Sysdeps<SetSid>::operator()(pid_t *sid) {
 	auto result = roxy_syscall0(ROXY_SYS_SET_SID);
-	if(result < 0)
-		return static_cast<int>(-result);
+	if(result.error)
+		return static_cast<int>(result.error);
 
-	*sid = static_cast<pid_t>(result);
+	*sid = static_cast<pid_t>(result.value);
 	return 0;
 }
 

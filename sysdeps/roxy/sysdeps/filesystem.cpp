@@ -19,7 +19,7 @@ namespace mlibc {
 int Sysdeps<Chdir>::operator()(const char *path) {
 	auto result = roxy_syscall1(ROXY_SYS_CHDIR, reinterpret_cast<long>(path));
 
-	return result < 0 ? static_cast<int>(-result) : 0;
+	return result.value < 0 ? static_cast<int>(result.error) : 0;
 }
 
 int Sysdeps<GetCwd>::operator()(char *buffer, size_t size) {
@@ -29,15 +29,15 @@ int Sysdeps<GetCwd>::operator()(char *buffer, size_t size) {
 	    size
 	);
 
-	return result < 0 ? static_cast<int>(-result) : 0;
+	return result.value < 0 ? static_cast<int>(result.error) : 0;
 }
 
 int Sysdeps<OpenDir>::operator()(const char *path, int *handle) {
 	auto result = roxy_syscall1(ROXY_SYS_OPEN_DIR, reinterpret_cast<long>(path));
-	if(result < 0)
-		return static_cast<int>(-result);
+	if(result.error)
+		return static_cast<int>(result.error);
 
-	*handle = static_cast<int>(result);
+	*handle = static_cast<int>(result.value);
 	return 0;
 }
 
@@ -53,10 +53,10 @@ int Sysdeps<ReadEntries>::operator()(
 	    reinterpret_cast<long>(buffer),
 	    max_size
 	);
-	if(result < 0)
-		return static_cast<int>(-result);
+	if(result.error)
+		return static_cast<int>(result.error);
 
-	*bytes_read = static_cast<size_t>(result);
+	*bytes_read = static_cast<size_t>(result.value);
 	return 0;
 }
 
@@ -72,7 +72,7 @@ int Sysdeps<Mkdirat>::operator()(int dirfd, const char *path, mode_t mode) {
 	    mode
 	);
 
-	return result < 0 ? static_cast<int>(-result) : 0;
+	return result.value < 0 ? static_cast<int>(result.error) : 0;
 }
 
 int Sysdeps<Rmdir>::operator()(const char *path) {
@@ -87,7 +87,7 @@ int Sysdeps<Unlinkat>::operator()(int dirfd, const char *path, int flags) {
 	    flags
 	);
 
-	return result < 0 ? static_cast<int>(-result) : 0;
+	return result.value < 0 ? static_cast<int>(result.error) : 0;
 }
 
 int Sysdeps<Readlink>::operator()(
@@ -113,10 +113,10 @@ int Sysdeps<Readlinkat>::operator()(
 	    reinterpret_cast<long>(buffer),
 	    max_size
 	);
-	if(result < 0)
-		return static_cast<int>(-result);
+	if(result.error)
+		return static_cast<int>(result.error);
 
-	*length = static_cast<ssize_t>(result);
+	*length = static_cast<ssize_t>(result.value);
 	return 0;
 }
 
@@ -140,7 +140,7 @@ int Sysdeps<Linkat>::operator()(
 	    flags
 	);
 
-	return result < 0 ? static_cast<int>(-result) : 0;
+	return result.value < 0 ? static_cast<int>(result.error) : 0;
 }
 
 int Sysdeps<Symlink>::operator()(const char *target_path, const char *link_path) {
@@ -155,7 +155,7 @@ int Sysdeps<Symlinkat>::operator()(const char *target_path, int dirfd, const cha
 	    reinterpret_cast<long>(link_path)
 	);
 
-	return result < 0 ? static_cast<int>(-result) : 0;
+	return result.value < 0 ? static_cast<int>(result.error) : 0;
 }
 
 int Sysdeps<Rename>::operator()(const char *path, const char *new_path) {
@@ -176,7 +176,7 @@ int Sysdeps<Renameat>::operator()(
 	    reinterpret_cast<long>(new_path)
 	);
 
-	return result < 0 ? static_cast<int>(-result) : 0;
+	return result.value < 0 ? static_cast<int>(result.error) : 0;
 }
 
 void Sysdeps<Sync>::operator()() {
@@ -186,13 +186,13 @@ void Sysdeps<Sync>::operator()() {
 int Sysdeps<Fsync>::operator()(int fd) {
 	auto result = roxy_syscall1(ROXY_SYS_FSYNC, fd);
 
-	return result < 0 ? static_cast<int>(-result) : 0;
+	return result.value < 0 ? static_cast<int>(result.error) : 0;
 }
 
 int Sysdeps<Ftruncate>::operator()(int fd, size_t size) {
 	auto result = roxy_syscall2(ROXY_SYS_FTRUNCATE, fd, size);
 
-	return result < 0 ? static_cast<int>(-result) : 0;
+	return result.value < 0 ? static_cast<int>(result.error) : 0;
 }
 
 int Sysdeps<Stat>::operator()(
@@ -211,8 +211,8 @@ int Sysdeps<Stat>::operator()(
 	    flags,
 	    reinterpret_cast<long>(&stat_result)
 	);
-	if(result < 0)
-		return static_cast<int>(-result);
+	if(result.error)
+		return static_cast<int>(result.error);
 	if(stat_result.size > INT64_MAX)
 		return EOVERFLOW;
 
@@ -228,39 +228,39 @@ int Sysdeps<Stat>::operator()(
 
 int Sysdeps<Seek>::operator()(int fd, off_t offset, int whence, off_t *new_offset) {
 	auto result = roxy_syscall3(ROXY_SYS_SEEK, fd, offset, whence);
-	if(result < 0)
-		return static_cast<int>(-result);
+	if(result.error)
+		return static_cast<int>(result.error);
 
-	*new_offset = result;
+	*new_offset = result.value;
 	return 0;
 }
 
 int Sysdeps<Umask>::operator()(mode_t mode, mode_t *old) {
 	// The kernel stores the new mask and returns the previous one.
 	auto result = roxy_syscall1(ROXY_SYS_UMASK, mode);
-	if(result < 0)
-		return static_cast<int>(-result);
+	if(result.error)
+		return static_cast<int>(result.error);
 
-	*old = static_cast<mode_t>(result);
+	*old = static_cast<mode_t>(result.value);
 	return 0;
 }
 
 int Sysdeps<Chmod>::operator()(const char *pathname, mode_t mode) {
 	auto result = roxy_syscall2(ROXY_SYS_CHMOD, reinterpret_cast<long>(pathname), mode);
 
-	return result < 0 ? static_cast<int>(-result) : 0;
+	return result.value < 0 ? static_cast<int>(result.error) : 0;
 }
 
 int Sysdeps<Fchmod>::operator()(int fd, mode_t mode) {
 	auto result = roxy_syscall2(ROXY_SYS_FCHMOD, fd, mode);
 
-	return result < 0 ? static_cast<int>(-result) : 0;
+	return result.value < 0 ? static_cast<int>(result.error) : 0;
 }
 
 int Sysdeps<Access>::operator()(const char *pathname, int mode) {
 	auto result = roxy_syscall2(ROXY_SYS_ACCESS, reinterpret_cast<long>(pathname), mode);
 
-	return result < 0 ? static_cast<int>(-result) : 0;
+	return result.value < 0 ? static_cast<int>(result.error) : 0;
 }
 
 } // namespace mlibc

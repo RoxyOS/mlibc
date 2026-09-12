@@ -1,62 +1,66 @@
 #include <roxy/syscall.h>
 
-extern "C" roxy_syscall_word_t roxy_syscall0(long number) {
-	roxy_syscall_word_t result;
+extern "C" roxy_syscall_result roxy_syscall0(long number) {
+	roxy_syscall_result result;
 
-	asm volatile("syscall"
-	             : "=a"(result)
+	asm volatile("syscall\n\t"
+	             "movq %%r10, %1"
+	             : "=a"(result.value), "=&r"(result.error)
 	             : "a"(number)
 	             : "rcx", "r11", "memory");
 
 	return result;
 }
 
-extern "C" roxy_syscall_word_t roxy_syscall1(
+extern "C" roxy_syscall_result roxy_syscall1(
 	long number,
 	roxy_syscall_word_t first
 ) {
-	roxy_syscall_word_t result;
+	roxy_syscall_result result;
 
-	asm volatile("syscall"
-	             : "=a"(result)
+	asm volatile("syscall\n\t"
+	             "movq %%r10, %1"
+	             : "=a"(result.value), "=&r"(result.error)
 	             : "a"(number), "D"(first)
 	             : "rcx", "r11", "memory");
 
 	return result;
 }
 
-extern "C" roxy_syscall_word_t roxy_syscall2(
+extern "C" roxy_syscall_result roxy_syscall2(
 	long number,
 	roxy_syscall_word_t first,
 	roxy_syscall_word_t second
 ) {
-	roxy_syscall_word_t result;
+	roxy_syscall_result result;
 
-	asm volatile("syscall"
-	             : "=a"(result)
+	asm volatile("syscall\n\t"
+	             "movq %%r10, %1"
+	             : "=a"(result.value), "=&r"(result.error)
 	             : "a"(number), "D"(first), "S"(second)
 	             : "rcx", "r11", "memory");
 
 	return result;
 }
 
-extern "C" roxy_syscall_word_t roxy_syscall3(
+extern "C" roxy_syscall_result roxy_syscall3(
 	long number,
 	roxy_syscall_word_t first,
 	roxy_syscall_word_t second,
 	roxy_syscall_word_t third
 ) {
-	roxy_syscall_word_t result;
+	roxy_syscall_result result;
 
-	asm volatile("syscall"
-	             : "=a"(result)
+	asm volatile("syscall\n\t"
+	             "movq %%r10, %1"
+	             : "=a"(result.value), "=&r"(result.error)
 	             : "a"(number), "D"(first), "S"(second), "d"(third)
 	             : "rcx", "r11", "memory");
 
 	return result;
 }
 
-extern "C" roxy_syscall_word_t roxy_syscall4(
+extern "C" roxy_syscall_result roxy_syscall4(
 	long number,
 	roxy_syscall_word_t first,
 	roxy_syscall_word_t second,
@@ -64,17 +68,18 @@ extern "C" roxy_syscall_word_t roxy_syscall4(
 	roxy_syscall_word_t fourth
 ) {
 	register roxy_syscall_word_t fourth_register asm("r10") = fourth;
-	roxy_syscall_word_t result;
+	roxy_syscall_result result;
 
-	asm volatile("syscall"
-	             : "=a"(result)
+	asm volatile("syscall\n\t"
+	             "movq %%r10, %1"
+	             : "=a"(result.value), "=&r"(result.error)
 	             : "a"(number), "D"(first), "S"(second), "d"(third), "r"(fourth_register)
 	             : "rcx", "r11", "memory");
 
 	return result;
 }
 
-extern "C" roxy_syscall_word_t roxy_syscall5(
+extern "C" roxy_syscall_result roxy_syscall5(
 	long number,
 	roxy_syscall_word_t first,
 	roxy_syscall_word_t second,
@@ -84,10 +89,11 @@ extern "C" roxy_syscall_word_t roxy_syscall5(
 ) {
 	register roxy_syscall_word_t fourth_register asm("r10") = fourth;
 	register roxy_syscall_word_t fifth_register asm("r8") = fifth;
-	roxy_syscall_word_t result;
+	roxy_syscall_result result;
 
-	asm volatile("syscall"
-	             : "=a"(result)
+	asm volatile("syscall\n\t"
+	             "movq %%r10, %1"
+	             : "=a"(result.value), "=&r"(result.error)
 	             : "a"(number), "D"(first), "S"(second), "d"(third), "r"(fourth_register),
 	               "r"(fifth_register)
 	             : "rcx", "r11", "memory");
@@ -95,7 +101,7 @@ extern "C" roxy_syscall_word_t roxy_syscall5(
 	return result;
 }
 
-extern "C" roxy_syscall_word_t roxy_syscall6(
+extern "C" roxy_syscall_result roxy_syscall6(
 	long number,
 	roxy_syscall_word_t first,
 	roxy_syscall_word_t second,
@@ -107,10 +113,11 @@ extern "C" roxy_syscall_word_t roxy_syscall6(
 	register roxy_syscall_word_t fourth_register asm("r10") = fourth;
 	register roxy_syscall_word_t fifth_register asm("r8") = fifth;
 	register roxy_syscall_word_t sixth_register asm("r9") = sixth;
-	roxy_syscall_word_t result;
+	roxy_syscall_result result;
 
-	asm volatile("syscall"
-	             : "=a"(result)
+	asm volatile("syscall\n\t"
+	             "movq %%r10, %1"
+	             : "=a"(result.value), "=&r"(result.error)
 	             : "a"(number), "D"(first), "S"(second), "d"(third), "r"(fourth_register),
 	               "r"(fifth_register), "r"(sixth_register)
 	             : "rcx", "r11", "memory");

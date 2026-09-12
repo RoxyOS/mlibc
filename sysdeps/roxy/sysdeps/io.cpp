@@ -14,10 +14,10 @@ int Sysdeps<Open>::operator()(const char *path, int flags, mode_t mode, int *fd)
 	    flags,
 	    mode
 	);
-	if(result < 0)
-		return static_cast<int>(-result);
+	if(result.error)
+		return static_cast<int>(result.error);
 
-	*fd = static_cast<int>(result);
+	*fd = static_cast<int>(result.value);
 	return 0;
 }
 
@@ -53,7 +53,7 @@ int Sysdeps<Dup>::operator()(int fd, int flags, int *newfd) {
 	auto raw = roxy_syscall3(ROXY_SYS_FCNTL, fd, 0 /* F_DUPFD */, 0);
 	if(int error = syscall_error(raw); error)
 		return error;
-	*newfd = static_cast<int>(raw);
+	*newfd = static_cast<int>(raw.value);
 	return 0;
 }
 
@@ -69,7 +69,7 @@ int Sysdeps<Fcntl>::operator()(int fd, int command, va_list args, int *result) {
 	if(int error = syscall_error(raw); error)
 		return error;
 
-	*result = static_cast<int>(raw);
+	*result = static_cast<int>(raw.value);
 	return 0;
 }
 

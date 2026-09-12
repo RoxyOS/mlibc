@@ -27,11 +27,11 @@ int Sysdeps<Ioctl>::operator()(int fd, unsigned long request, void *argument, in
 	    static_cast<long>(request),
 	    reinterpret_cast<long>(argument)
 	);
-	if(result < 0)
-		return static_cast<int>(-result);
+	if(result.error)
+		return static_cast<int>(result.error);
 
 	if(output)
-		*output = static_cast<int>(result);
+		*output = static_cast<int>(result.value);
 	return 0;
 }
 

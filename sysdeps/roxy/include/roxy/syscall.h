@@ -155,24 +155,37 @@ static_assert(offsetof(roxy_dirent, type) == 18);
 static_assert(offsetof(roxy_dirent, name) == 19);
 #endif
 
-roxy_syscall_word_t roxy_syscall0(long number);
+/*
+ * A syscall's outcome.
+ *
+ * The kernel returns the value in `rax` and the error code in `r10`, with `0` in `r10` meaning
+ * success, so a caller must check `error` before using `value`. The two words travel in separate
+ * registers rather than being encoded into one, which is what lets `value` use its whole 64-bit
+ * range: there is no error range to reserve.
+ */
+typedef struct {
+	roxy_syscall_word_t value;
+	roxy_syscall_word_t error;
+} roxy_syscall_result;
 
-roxy_syscall_word_t roxy_syscall1(long number, roxy_syscall_word_t first);
+roxy_syscall_result roxy_syscall0(long number);
 
-roxy_syscall_word_t roxy_syscall2(
+roxy_syscall_result roxy_syscall1(long number, roxy_syscall_word_t first);
+
+roxy_syscall_result roxy_syscall2(
 	long number,
 	roxy_syscall_word_t first,
 	roxy_syscall_word_t second
 );
 
-roxy_syscall_word_t roxy_syscall3(
+roxy_syscall_result roxy_syscall3(
 	long number,
 	roxy_syscall_word_t first,
 	roxy_syscall_word_t second,
 	roxy_syscall_word_t third
 );
 
-roxy_syscall_word_t roxy_syscall4(
+roxy_syscall_result roxy_syscall4(
 	long number,
 	roxy_syscall_word_t first,
 	roxy_syscall_word_t second,
@@ -180,7 +193,7 @@ roxy_syscall_word_t roxy_syscall4(
 	roxy_syscall_word_t fourth
 );
 
-roxy_syscall_word_t roxy_syscall5(
+roxy_syscall_result roxy_syscall5(
 	long number,
 	roxy_syscall_word_t first,
 	roxy_syscall_word_t second,
@@ -189,7 +202,7 @@ roxy_syscall_word_t roxy_syscall5(
 	roxy_syscall_word_t fifth
 );
 
-roxy_syscall_word_t roxy_syscall6(
+roxy_syscall_result roxy_syscall6(
 	long number,
 	roxy_syscall_word_t first,
 	roxy_syscall_word_t second,

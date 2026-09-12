@@ -12,10 +12,10 @@ int Sysdeps<Poll>::operator()(struct pollfd *fds, nfds_t count, int timeout, int
 	    count,
 	    timeout
 	);
-	if(result < 0)
-		return static_cast<int>(-result);
+	if(result.error)
+		return static_cast<int>(result.error);
 
-	*num_events = static_cast<int>(result);
+	*num_events = static_cast<int>(result.value);
 	return 0;
 }
 
@@ -33,10 +33,10 @@ int Sysdeps<Ppoll>::operator()(
 	    reinterpret_cast<long>(timeout),
 	    reinterpret_cast<long>(signal_mask)
 	);
-	if(result < 0)
-		return static_cast<int>(-result);
+	if(result.error)
+		return static_cast<int>(result.error);
 
-	*num_events = static_cast<int>(result);
+	*num_events = static_cast<int>(result.value);
 	return 0;
 }
 
@@ -58,10 +58,10 @@ int Sysdeps<Pselect>::operator()(
 	    reinterpret_cast<long>(timeout),
 	    reinterpret_cast<long>(signal_mask)
 	);
-	if(result < 0)
-		return static_cast<int>(-result);
+	if(result.error)
+		return static_cast<int>(result.error);
 
-	*num_events = static_cast<int>(result);
+	*num_events = static_cast<int>(result.value);
 	return 0;
 }
 

@@ -14,17 +14,17 @@ int Sysdeps<Socketpair>::operator()(int domain, int type_and_flags, int proto, i
 	    reinterpret_cast<long>(fds)
 	);
 
-	return result < 0 ? static_cast<int>(-result) : 0;
+	return result.value < 0 ? static_cast<int>(result.error) : 0;
 }
 
 int Sysdeps<Socket>::operator()(int family, int type, int protocol, int *fd) {
 	auto result = roxy_syscall3(ROXY_SYS_SOCKET, family, type, protocol);
 
-	if (result < 0) {
-		return static_cast<int>(-result);
+	if (result.value < 0) {
+		return static_cast<int>(result.error);
 	}
 
-	*fd = static_cast<int>(result);
+	*fd = static_cast<int>(result.value);
 	return 0;
 }
 
@@ -36,13 +36,13 @@ int Sysdeps<Bind>::operator()(int fd, const struct sockaddr *addr_ptr, socklen_t
 	    addr_length
 	);
 
-	return result < 0 ? static_cast<int>(-result) : 0;
+	return result.value < 0 ? static_cast<int>(result.error) : 0;
 }
 
 int Sysdeps<Listen>::operator()(int fd, int backlog) {
 	auto result = roxy_syscall2(ROXY_SYS_LISTEN, fd, backlog);
 
-	return result < 0 ? static_cast<int>(-result) : 0;
+	return result.value < 0 ? static_cast<int>(result.error) : 0;
 }
 
 int Sysdeps<Accept>::operator()(
@@ -59,11 +59,11 @@ int Sysdeps<Accept>::operator()(
 
 	auto result = roxy_syscall1(ROXY_SYS_ACCEPT, fd);
 
-	if (result < 0) {
-		return static_cast<int>(-result);
+	if (result.value < 0) {
+		return static_cast<int>(result.error);
 	}
 
-	*newfd = static_cast<int>(result);
+	*newfd = static_cast<int>(result.value);
 
 	// The kernel does not report peer addresses. Roxy client endpoints are always unnamed
 	// AF_UNIX sockets because the kernel refuses client-side bind(), so reporting an unnamed
@@ -87,7 +87,7 @@ int Sysdeps<Connect>::operator()(int fd, const struct sockaddr *addr_ptr, sockle
 	    addr_length
 	);
 
-	return result < 0 ? static_cast<int>(-result) : 0;
+	return result.value < 0 ? static_cast<int>(result.error) : 0;
 }
 
 int Sysdeps<Sockname>::operator()(
@@ -104,7 +104,7 @@ int Sysdeps<Sockname>::operator()(
 	    reinterpret_cast<long>(actual_length)
 	);
 
-	return result < 0 ? static_cast<int>(-result) : 0;
+	return result.value < 0 ? static_cast<int>(result.error) : 0;
 }
 
 int Sysdeps<Peername>::operator()(
@@ -121,13 +121,13 @@ int Sysdeps<Peername>::operator()(
 	    reinterpret_cast<long>(actual_length)
 	);
 
-	return result < 0 ? static_cast<int>(-result) : 0;
+	return result.value < 0 ? static_cast<int>(result.error) : 0;
 }
 
 int Sysdeps<Shutdown>::operator()(int fd, int how) {
 	auto result = roxy_syscall2(ROXY_SYS_SHUTDOWN, fd, how);
 
-	return result < 0 ? static_cast<int>(-result) : 0;
+	return result.value < 0 ? static_cast<int>(result.error) : 0;
 }
 
 int Sysdeps<GetSockopt>::operator()(
@@ -146,8 +146,8 @@ int Sysdeps<GetSockopt>::operator()(
 	    reinterpret_cast<long>(size)
 	);
 
-	if (result < 0) {
-		return static_cast<int>(-result);
+	if (result.value < 0) {
+		return static_cast<int>(result.error);
 	}
 
 	return 0;
@@ -166,11 +166,11 @@ int Sysdeps<MsgSend>::operator()(
 	    flags
 	);
 
-	if (result < 0) {
-		return static_cast<int>(-result);
+	if (result.value < 0) {
+		return static_cast<int>(result.error);
 	}
 
-	*length = static_cast<ssize_t>(result);
+	*length = static_cast<ssize_t>(result.value);
 	return 0;
 }
 
@@ -187,11 +187,11 @@ int Sysdeps<MsgRecv>::operator()(
 	    flags
 	);
 
-	if (result < 0) {
-		return static_cast<int>(-result);
+	if (result.value < 0) {
+		return static_cast<int>(result.error);
 	}
 
-	*length = static_cast<ssize_t>(result);
+	*length = static_cast<ssize_t>(result.value);
 	return 0;
 }
 

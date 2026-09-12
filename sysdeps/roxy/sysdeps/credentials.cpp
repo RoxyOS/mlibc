@@ -4,19 +4,23 @@
 namespace mlibc {
 
 gid_t Sysdeps<GetGid>::operator()() {
-	return static_cast<gid_t>(roxy_syscall0(ROXY_SYS_GETGID));
+	// The kernel cannot fail this; every ID is 0 until a user model exists.
+	return static_cast<gid_t>(roxy_syscall0(ROXY_SYS_GETGID).value);
 }
 
 gid_t Sysdeps<GetEgid>::operator()() {
-	return static_cast<gid_t>(roxy_syscall0(ROXY_SYS_GETEGID));
+	// The kernel cannot fail this; every ID is 0 until a user model exists.
+	return static_cast<gid_t>(roxy_syscall0(ROXY_SYS_GETEGID).value);
 }
 
 uid_t Sysdeps<GetUid>::operator()() {
-	return static_cast<uid_t>(roxy_syscall0(ROXY_SYS_GETUID));
+	// The kernel cannot fail this; every ID is 0 until a user model exists.
+	return static_cast<uid_t>(roxy_syscall0(ROXY_SYS_GETUID).value);
 }
 
 uid_t Sysdeps<GetEuid>::operator()() {
-	return static_cast<uid_t>(roxy_syscall0(ROXY_SYS_GETEUID));
+	// The kernel cannot fail this; every ID is 0 until a user model exists.
+	return static_cast<uid_t>(roxy_syscall0(ROXY_SYS_GETEUID).value);
 }
 
 int Sysdeps<GetResuid>::operator()(uid_t *ruid, uid_t *euid, uid_t *suid) {

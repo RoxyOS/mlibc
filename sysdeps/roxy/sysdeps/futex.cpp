@@ -26,7 +26,7 @@ int Sysdeps<FutexWake>::operator()(int *pointer, bool all) {
 
 pid_t Sysdeps<FutexTid>::operator()() {
 	// gettid() always succeeds.
-	return static_cast<pid_t>(roxy_syscall0(ROXY_SYS_GET_TID));
+	return static_cast<pid_t>(roxy_syscall0(ROXY_SYS_GET_TID).value);
 }
 
 } // namespace mlibc
