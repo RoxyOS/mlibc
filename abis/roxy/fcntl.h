@@ -114,23 +114,24 @@
 /*
  * Roxy's `dirfd` selector and `AT_*` flags.
  *
- * The selector and the flags are separate arguments, so each is numbered from its own base above
- * Linux's range. A value below a base is another personality's numbering — Linux's `AT_FDCWD`,
- * for one, is -100 — and the kernel reports such a caller as foreign instead of reading it as a
- * request of its own. Roxy defines only the flags it accepts: `AT_NO_AUTOMOUNT`,
- * `AT_EMPTY_PATH`, and the `AT_STATX_*` family are absent.
+ * The two are separate arguments with separate shapes. `dirfd` is a descriptor plus one magic
+ * selector: a descriptor is never negative, so the working directory is spelled as a negative
+ * value no descriptor can hold. A negative value this header does not name — Linux's own
+ * `AT_FDCWD` is -100 — is another personality's numbering, and the kernel reports such a caller as
+ * foreign instead of reading it as a request of its own.
  *
- * The flags base sits above Linux's whole range for the word, whose top is `AT_RECURSIVE` at bit
- * 15: a lower base would let one of Linux's flags land on one of ours, and `AT_SYMLINK_FOLLOW`
- * would then read as `AT_REMOVEDIR`.
+ * `AT_*` is a flag word, so every flag is one bit from a base above Linux's whole range for the
+ * word, whose top is `AT_RECURSIVE` at bit 15: a lower base would let one of Linux's flags land on
+ * one of ours, and `AT_SYMLINK_FOLLOW` would then read as `AT_REMOVEDIR`. Roxy defines only the
+ * flags it accepts: `AT_NO_AUTOMOUNT`, `AT_EMPTY_PATH`, and the `AT_STATX_*` family are absent.
  *
  * The kernel side is `kernel/syscall/src/syscalls/fs/mod.rs` (the selector) and
  * `kernel/syscall/src/syscalls/fs/dir.rs` (the flags).
  */
-#define ROXY_AT_FDCWD_BASE 0x100
 
-/* Operate on the working directory. */
-#define AT_FDCWD ROXY_AT_FDCWD_BASE
+/* Operate on the working directory. Negative so it can never be a real descriptor, and not Linux's
+ * -100, so that Linux's selector is reported as another personality's. */
+#define AT_FDCWD (-0x200)
 
 #define ROXY_AT_FLAGS_BASE (1 << 16)
 
