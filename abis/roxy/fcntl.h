@@ -120,6 +120,10 @@
  * request of its own. Roxy defines only the flags it accepts: `AT_NO_AUTOMOUNT`,
  * `AT_EMPTY_PATH`, and the `AT_STATX_*` family are absent.
  *
+ * The flags base sits above Linux's whole range for the word, whose top is `AT_RECURSIVE` at bit
+ * 15: a lower base would let one of Linux's flags land on one of ours, and `AT_SYMLINK_FOLLOW`
+ * would then read as `AT_REMOVEDIR`.
+ *
  * The kernel side is `kernel/syscall/src/syscalls/fs/mod.rs` (the selector) and
  * `kernel/syscall/src/syscalls/fs/dir.rs` (the flags).
  */
@@ -128,7 +132,7 @@
 /* Operate on the working directory. */
 #define AT_FDCWD ROXY_AT_FDCWD_BASE
 
-#define ROXY_AT_FLAGS_BASE 0x200
+#define ROXY_AT_FLAGS_BASE (1 << 16)
 
 /* Follow the final component if it is a symbolic link (the default; the flag is a no-op). */
 #define AT_SYMLINK_NOFOLLOW ROXY_AT_FLAGS_BASE
