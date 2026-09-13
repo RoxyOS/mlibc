@@ -57,15 +57,33 @@ struct cmsghdr {
 }
 #endif
 
-#define SCM_RIGHTS 1
+/*
+ * Roxy's socket constants.
+ *
+ * Each word is numbered from a base above that word's whole Linux range, so a value below the base
+ * is another personality's numbering: the kernel reports such a caller as foreign instead of
+ * reading it as a request of its own. The one exception is a `ROXY_*_UNSUPPORTED` marker, which
+ * every member Roxy defines but cannot serve is given: naming one still compiles, and passing one
+ * reaches the kernel as that marker, which it reports as unsupported rather than as a foreign
+ * number. Collapsing them keeps ported sources compiling without pretending the option exists.
+ *
+ * The kernel side is `kernel/syscall/src/syscalls/socket/`.
+ */
+
+/* Linux's `SCM_*` are 1 and 2, so 0x80 is not one of them. */
+#define ROXY_SCM_UNSUPPORTED 0x80
+
+/* Ancillary data passing is not implemented, so every `SCM_*` is the marker. */
+#define SCM_RIGHTS ROXY_SCM_UNSUPPORTED
 
 #if defined(_DEFAULT_SOURCE) || __MLIBC_XOPEN
-#define SCM_CREDENTIALS 2
+#define SCM_CREDENTIALS ROXY_SCM_UNSUPPORTED
 #endif /* defined(_DEFAULT_SOURCE) || __MLIBC_XOPEN */
 
-#define SHUT_RD 0
-#define SHUT_WR 1
-#define SHUT_RDWR 2
+#define ROXY_SHUT_BASE 0x100
+#define SHUT_RD ROXY_SHUT_BASE
+#define SHUT_WR (ROXY_SHUT_BASE << 1)
+#define SHUT_RDWR (ROXY_SHUT_BASE << 2)
 
 #ifndef SOCK_STREAM
 #define SOCK_STREAM    1
