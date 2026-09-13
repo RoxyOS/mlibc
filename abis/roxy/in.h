@@ -110,8 +110,6 @@ struct group_source_req {
 
 #define INADDR_UNSPEC_GROUP     ((in_addr_t) 0xe0000000)
 #define INADDR_ALLHOSTS_GROUP   ((in_addr_t) 0xe0000001)
-#define INADDR_ALLRTRS_GROUP    ((in_addr_t) 0xe0000002)
-#define INADDR_ALLSNOOPERS_GROUP ((in_addr_t) 0xe000006a)
 #define INADDR_MAX_LOCAL_GROUP  ((in_addr_t) 0xe00000ff)
 
 #define IN6ADDR_ANY_INIT      { { { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 } } }
@@ -133,7 +131,6 @@ struct group_source_req {
 #define IPPROTO_UDP      17
 #define IPPROTO_IDP      22
 #define IPPROTO_TP       29
-#define IPPROTO_DCCP     33
 #define IPPROTO_IPV6     41
 #define IPPROTO_ROUTING  43
 #define IPPROTO_FRAGMENT 44
@@ -144,15 +141,9 @@ struct group_source_req {
 #define IPPROTO_ICMPV6   58
 #define IPPROTO_NONE     59
 #define IPPROTO_DSTOPTS  60
-#define IPPROTO_MTP      92
-#define IPPROTO_BEETPH   94
-#define IPPROTO_ENCAP    98
 #define IPPROTO_PIM      103
-#define IPPROTO_COMP     108
 #define IPPROTO_SCTP     132
-#define IPPROTO_MH       135
 #define IPPROTO_UDPLITE  136
-#define IPPROTO_MPLS     137
 #define IPPROTO_RAW      255
 #define IPPROTO_MAX      263
 
@@ -163,12 +154,9 @@ struct group_source_req {
 #define IP_RECVOPTS 6
 #define IP_RETOPTS 7
 #define IP_PKTINFO 8
-#define IP_PKTOPTIONS 9
-#define IP_MTU_DISCOVER 10
 #define IP_RECVERR 11
 #define IP_RECVTTL 12
 #define IP_RECVTOS 13
-#define IP_MTU 14
 #define IP_MULTICAST_IF 32
 #define IP_MULTICAST_TTL 33
 #define IP_MULTICAST_LOOP 34
@@ -180,10 +168,8 @@ struct group_source_req {
 #define IP_DROP_SOURCE_MEMBERSHIP 40
 
 #if defined(_DEFAULT_SOURCE)
-#define IP_UNICAST_IF 50
 #endif /* defined(_DEFAULT_SOURCE) */
 
-#define IPV6_2292PKTOPTIONS 6
 #define IPV6_CHECKSUM 7
 #define IPV6_2292HOPLIMIT 8
 #define IPV6_UNICAST_HOPS 16
@@ -192,8 +178,6 @@ struct group_source_req {
 #define IPV6_MULTICAST_LOOP 19
 #define IPV6_JOIN_GROUP 20
 #define IPV6_LEAVE_GROUP 21
-#define IPV6_MTU_DISCOVER 23
-#define IPV6_MTU 24
 #define IPV6_RECVERR 25
 #define IPV6_V6ONLY 26
 #define IPV6_RECVPKTINFO 49
@@ -204,29 +188,10 @@ struct group_source_req {
 #define IPV6_RECVTCLASS	66
 #define IPV6_TCLASS 67
 
-#define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
-#define IPV6_DROP_MEMBERSHIP IPV6_LEAVE_GROUP
 
-#define IPV6_PMTUDISC_DONT 0
-#define IPV6_PMTUDISC_WANT 1
-#define IPV6_PMTUDISC_DO 2
-#define IPV6_PMTUDISC_PROBE 3
-#define IPV6_PMTUDISC_INTERFACE 4
-#define IPV6_PMTUDISC_OMIT 5
 
-#define IP_PMTUDISC_DONT 0
-#define IP_PMTUDISC_WANT 1
-#define IP_PMTUDISC_DO 2
-#define IP_PMTUDISC_PROBE 3
-#define IP_PMTUDISC_INTERFACE 4
-#define IP_PMTUDISC_OMIT 5
 
 #if defined(_DEFAULT_SOURCE)
-#define MCAST_JOIN_GROUP 42
-#define MCAST_BLOCK_SOURCE 43
-#define MCAST_UNBLOCK_SOURCE 44
-#define MCAST_JOIN_SOURCE_GROUP 46
-#define MCAST_LEAVE_SOURCE_GROUP 47
 #endif /* defined(_DEFAULT_SOURCE) */
 
 #if __MLIBC_LINUX_OPTION
