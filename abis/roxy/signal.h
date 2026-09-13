@@ -60,14 +60,38 @@ static_assert(__builtin_offsetof(siginfo_t, si_addr) == 32);
 #endif
 
 /* Required for sys_sigaction sysdep. */
-#define SA_NOCLDSTOP 1
-#define SA_NOCLDWAIT 2
-#define SA_SIGINFO 4
-#define SA_ONSTACK 0x08000000
-#define SA_RESTART 0x10000000
-#define SA_NODEFER 0x40000000
-#define SA_RESETHAND 0x80000000
-#define SA_RESTORER 0x04000000
+/*
+ * Roxy's `sigaction` flags.
+ *
+ * The base sits above Linux's own flags — its lowest are 1, 2, 4 and its highest fill bits 24-31 —
+ * so a value below the base is another personality's numbering: the kernel reports such a caller
+ * as foreign instead of reading it as a request of its own. The kernel honours only
+ * `SA_SIGINFO` and `SA_RESTART`; every other flag below is the marker for a flag Roxy defines but
+ * cannot honour, which the kernel reports as unsupported. Naming one still compiles, so ported
+ * sources build, but they do not pretend the flag works.
+ *
+ * The kernel side is `kernel/syscall/src/syscalls/signal/action.rs`.
+ */
+#define ROXY_SA_BASE 0x100
+/* Linux uses no bit 7 for its flags, so 0x80 is not one of them. */
+#define ROXY_SA_UNSUPPORTED 0x80
+
+/* Do not send `SIGCHLD` when a child stops or continues. */
+#define SA_NOCLDSTOP ROXY_SA_UNSUPPORTED
+/* Do not create zombies for children; they are reaped automatically. */
+#define SA_NOCLDWAIT ROXY_SA_UNSUPPORTED
+/* Invoke the handler with `(signo, siginfo_t *, null)`. */
+#define SA_SIGINFO ROXY_SA_BASE
+/* Run the handler on an alternate stack set by `sigaltstack`. */
+#define SA_ONSTACK ROXY_SA_UNSUPPORTED
+/* Re-execute an interrupted blocking syscall after the handler returns. */
+#define SA_RESTART (ROXY_SA_BASE << 1)
+/* Do not add the signal to the mask while its handler runs. */
+#define SA_NODEFER ROXY_SA_UNSUPPORTED
+/* Reset the disposition to the default before running the handler. */
+#define SA_RESETHAND ROXY_SA_UNSUPPORTED
+/* Take the restorer's address from the record rather than the kernel's trampoline. */
+#define SA_RESTORER ROXY_SA_UNSUPPORTED
 
 /* SA_NOMASK is an alias for SA_NODEFER */
 /* SA_ONESHOT is an alias for SA_RESETHAND */
