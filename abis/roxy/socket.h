@@ -71,13 +71,16 @@ struct cmsghdr {
  */
 
 /* Linux's families stop at `PF_MAX` 46, so 0x80 is not one of them. `AF_INET` and `AF_INET6` keep
- * values of their own because an upstream `switch` names them as cases. */
+ * values of their own because an upstream `switch` names both as cases in one statement, which
+ * duplicate labels would not compile; the kernel reports them as unsupported all the same, like
+ * every other family it cannot serve. */
 #define ROXY_AF_BASE 0x100
 #define ROXY_AF_UNSUPPORTED 0x80
 
 /* Linux's type word uses bits 0-3, 11 (`SOCK_NONBLOCK`), and 19 (`SOCK_CLOEXEC`), so 1 << 12 is
  * free. The type occupies three bits from the base, with the two supported flags above them, and
- * `SOCK_DGRAM` takes a value of its own for the same reason `AF_INET` does. */
+ * `SOCK_DGRAM` takes a value of its own for the same reason `AF_INET` does, and is reported the
+ * same way. */
 #define ROXY_SOCK_BASE (1 << 20)
 #define ROXY_SOCK_TYPE_MASK ((ROXY_SOCK_BASE << 3) - ROXY_SOCK_BASE)
 #define ROXY_SOCK_UNSUPPORTED (1 << 12)
