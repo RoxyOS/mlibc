@@ -164,19 +164,22 @@ typedef struct __stack {
 } stack_t;
 
 /*
- * Roxy's `sigevent.sigev_notify` values.
+ * Roxy's `sigevent.sigev_notify` modes.
  *
- * Numbered as a small enumeration from `ROXY_SIGEV_BASE`, above Linux's range, so a
- * `sigev_notify` below the base is another personality's numbering and the kernel reports it as
- * foreign.
+ * Each mode is its own bit, from `ROXY_SIGEV_BASE` — the shape Linux's own set has (0, 1, 2, 4) —
+ * so a combination of two modes is not a mode: the kernel reports it instead of reading it as
+ * whichever mode its bits happen to name. `ROXY_SIGEV_BASE` also sits above Linux's range, so a
+ * `sigev_notify` below the base is another personality's numbering and is reported as foreign.
+ *
+ * The values are compared for equality; nothing tests them as a mask.
  *
  * The kernel side is `kernel/syscall/src/syscalls/timer/abi.rs`.
  */
 #define ROXY_SIGEV_BASE 0x100
 #define SIGEV_SIGNAL ROXY_SIGEV_BASE
-#define SIGEV_NONE (ROXY_SIGEV_BASE + 1)
-#define SIGEV_THREAD (ROXY_SIGEV_BASE + 2)
-#define SIGEV_THREAD_ID (ROXY_SIGEV_BASE + 3)
+#define SIGEV_NONE (ROXY_SIGEV_BASE << 1)
+#define SIGEV_THREAD (ROXY_SIGEV_BASE << 2)
+#define SIGEV_THREAD_ID (ROXY_SIGEV_BASE << 3)
 
 #define SEGV_MAPERR 1
 #define SEGV_ACCERR 2
