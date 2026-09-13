@@ -3,12 +3,28 @@
 
 #include <mlibc-config.h>
 
-#define WNOHANG 1
-#define WUNTRACED 2
-#define WSTOPPED 2
-#define WEXITED 4
-#define WCONTINUED 8
-#define WNOWAIT 0x01000000
+/*
+ * Roxy's `wait` option bits.
+ *
+ * Bits are numbered from `ROXY_WAIT_OPTIONS_BASE`, which sits above Linux's *whole* option range
+ * (its highest, `WNOWAIT`, is bit 24), so no Linux bit can alias one of ours: a word carrying any
+ * bit below the base is another personality's numbering and the kernel reports it as foreign.
+ *
+ * Each option owns a bit instead of sharing one, so a caller's `&` test for one option cannot
+ * answer true because another was requested. `WEXITED` and `WNOWAIT` belong to `waitid`, which
+ * Roxy does not implement; they are defined so that ported code names them, and the kernel
+ * reports them when a caller passes them.
+ *
+ * The kernel side is `kernel/syscall/src/syscalls/waitpid.rs`.
+ */
+#define ROXY_WAIT_OPTIONS_BASE (1 << 25)
+
+#define WNOHANG ROXY_WAIT_OPTIONS_BASE
+#define WUNTRACED (ROXY_WAIT_OPTIONS_BASE << 1)
+#define WSTOPPED WUNTRACED
+#define WCONTINUED (ROXY_WAIT_OPTIONS_BASE << 2)
+#define WEXITED (ROXY_WAIT_OPTIONS_BASE << 3)
+#define WNOWAIT (ROXY_WAIT_OPTIONS_BASE << 4)
 
 #if __MLIBC_LINUX_OPTION
 

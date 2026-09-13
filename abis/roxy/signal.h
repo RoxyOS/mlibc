@@ -97,10 +97,18 @@ typedef void (*__sighandler) (int);
 #define SIGRTMIN 35
 #define SIGRTMAX 64
 
-/* constants for sigprocmask() */
-#define SIG_BLOCK 0
-#define SIG_UNBLOCK 1
-#define SIG_SETMASK 2
+/*
+ * Roxy's `sigprocmask` operations.
+ *
+ * Values are numbered from `ROXY_MASK_HOW_BASE`, above Linux's range, so a `how` below the base is
+ * another personality's numbering and the kernel reports it as foreign.
+ *
+ * The kernel side is `kernel/syscall/src/syscalls/signal/mask.rs`.
+ */
+#define ROXY_MASK_HOW_BASE 0x100
+#define SIG_BLOCK ROXY_MASK_HOW_BASE
+#define SIG_UNBLOCK (ROXY_MASK_HOW_BASE + 1)
+#define SIG_SETMASK (ROXY_MASK_HOW_BASE + 2)
 
 #define SIGHUP    1
 #define SIGQUIT   3
@@ -155,11 +163,20 @@ typedef struct __stack {
 	size_t ss_size;
 } stack_t;
 
-/* constants for sigev_notify of struct sigevent */
-#define SIGEV_SIGNAL 0
-#define SIGEV_NONE 1
-#define SIGEV_THREAD 2
-#define SIGEV_THREAD_ID 4
+/*
+ * Roxy's `sigevent.sigev_notify` values.
+ *
+ * Numbered as a small enumeration from `ROXY_SIGEV_BASE`, above Linux's range, so a
+ * `sigev_notify` below the base is another personality's numbering and the kernel reports it as
+ * foreign.
+ *
+ * The kernel side is `kernel/syscall/src/syscalls/timer/abi.rs`.
+ */
+#define ROXY_SIGEV_BASE 0x100
+#define SIGEV_SIGNAL ROXY_SIGEV_BASE
+#define SIGEV_NONE (ROXY_SIGEV_BASE + 1)
+#define SIGEV_THREAD (ROXY_SIGEV_BASE + 2)
+#define SIGEV_THREAD_ID (ROXY_SIGEV_BASE + 3)
 
 #define SEGV_MAPERR 1
 #define SEGV_ACCERR 2

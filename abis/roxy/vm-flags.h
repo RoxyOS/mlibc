@@ -3,34 +3,38 @@
 
 #include <mlibc-config.h>
 
+/*
+ * Roxy's memory protection bits and `mmap` flags.
+ *
+ * Each word is numbered from its own base, above Linux's range for that word, so a value below a
+ * base is another personality's numbering and the kernel reports it as foreign instead of reading
+ * it as a request of its own. Each bit is its own flag rather than a shared one, so a caller's `&`
+ * test for one bit cannot answer true because another was requested.
+ *
+ * `PROT_NONE` and `MAP_FILE` stay zero: they are the absence of a request, not a numbered one.
+ * Linux's `MAP_GROWSDOWN`, `MAP_DENYWRITE`, `MAP_EXECUTABLE`, `MAP_LOCKED`, `MAP_NORESERVE`,
+ * `MAP_POPULATE`, `MAP_NONBLOCK`, `MAP_STACK`, `MAP_HUGETLB`, `MAP_SYNC`, and
+ * `MAP_FIXED_NOREPLACE` are absent: Roxy implements none of them.
+ *
+ * The kernel side is `kernel/syscall/src/syscalls/vm/mod.rs` (protection) and
+ * `kernel/syscall/src/syscalls/vm/map.rs` (flags).
+ */
+#define ROXY_PROTECTION_BASE (1 << 20)
+
 #define PROT_NONE  0x00
-#define PROT_READ  0x01
-#define PROT_WRITE 0x02
-#define PROT_EXEC  0x04
+#define PROT_READ  ROXY_PROTECTION_BASE
+#define PROT_WRITE (ROXY_PROTECTION_BASE << 1)
+#define PROT_EXEC  (ROXY_PROTECTION_BASE << 2)
+
+#define ROXY_MAP_FLAGS_BASE (1 << 21)
 
 #define MAP_FAILED ((void *)(-1))
 #define MAP_FILE    0x00
-#define MAP_SHARED    0x01
-#define MAP_PRIVATE   0x02
-#define MAP_FIXED     0x10
-#define MAP_ANON      0x20
-#define MAP_ANONYMOUS 0x20
-
-#if __MLIBC_LINUX_OPTION
-
-#define MAP_GROWSDOWN 0x100
-#define MAP_DENYWRITE 0x800
-#define MAP_EXECUTABLE 0x1000
-#define MAP_LOCKED    0x2000
-#define MAP_NORESERVE 0x4000
-#define MAP_POPULATE  0x8000
-#define MAP_NONBLOCK  0x10000
-#define MAP_STACK     0x20000
-#define MAP_HUGETLB   0x40000
-#define MAP_SYNC      0x80000
-#define MAP_FIXED_NOREPLACE 0x100000
-
-#endif /* __MLIBC_LINUX_OPTION */
+#define MAP_SHARED  ROXY_MAP_FLAGS_BASE
+#define MAP_PRIVATE (ROXY_MAP_FLAGS_BASE << 1)
+#define MAP_FIXED   (ROXY_MAP_FLAGS_BASE << 2)
+#define MAP_ANON    (ROXY_MAP_FLAGS_BASE << 3)
+#define MAP_ANONYMOUS (ROXY_MAP_FLAGS_BASE << 3)
 
 #define MS_ASYNC 0x01
 #define MS_INVALIDATE 0x02

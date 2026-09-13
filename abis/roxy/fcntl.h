@@ -111,11 +111,33 @@
 /* Argument bit of the supported F_GETFD/F_SETFD. */
 #define FD_CLOEXEC 1
 
-#define AT_FDCWD -100
-#define AT_SYMLINK_NOFOLLOW 0x100
-#define AT_REMOVEDIR 0x200
-#define AT_SYMLINK_FOLLOW 0x400
-#define AT_EACCESS 0x200
+/*
+ * Roxy's `dirfd` selector and `AT_*` flags.
+ *
+ * The selector and the flags are separate arguments, so each is numbered from its own base above
+ * Linux's range. A value below a base is another personality's numbering — Linux's `AT_FDCWD`,
+ * for one, is -100 — and the kernel reports such a caller as foreign instead of reading it as a
+ * request of its own. Roxy defines only the flags it accepts: `AT_NO_AUTOMOUNT`,
+ * `AT_EMPTY_PATH`, and the `AT_STATX_*` family are absent.
+ *
+ * The kernel side is `kernel/syscall/src/syscalls/fs/mod.rs` (the selector) and
+ * `kernel/syscall/src/syscalls/fs/dir.rs` (the flags).
+ */
+#define ROXY_AT_FDCWD_BASE 0x100
+
+/* Operate on the working directory. */
+#define AT_FDCWD ROXY_AT_FDCWD_BASE
+
+#define ROXY_AT_FLAGS_BASE 0x200
+
+/* Follow the final component if it is a symbolic link (the default; the flag is a no-op). */
+#define AT_SYMLINK_NOFOLLOW ROXY_AT_FLAGS_BASE
+/* Unlink a directory instead of the entry inside it. */
+#define AT_REMOVEDIR (ROXY_AT_FLAGS_BASE << 1)
+/* Follow the final component if it is a symbolic link. */
+#define AT_SYMLINK_FOLLOW (ROXY_AT_FLAGS_BASE << 2)
+/* Test using the effective user and group IDs. */
+#define AT_EACCESS (ROXY_AT_FLAGS_BASE << 3)
 
 #if defined(_GNU_SOURCE)
 #define AT_NO_AUTOMOUNT 0x800
