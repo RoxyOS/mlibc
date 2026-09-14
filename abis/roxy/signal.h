@@ -52,7 +52,9 @@ typedef struct {
    asserted values are LP64 (x86_64) offsets, which is the only ABI Roxy targets. */
 #if defined(__x86_64__)
 static_assert(sizeof(siginfo_t) == 40);
+static_assert(__builtin_offsetof(siginfo_t, si_code) == 4);
 static_assert(__builtin_offsetof(siginfo_t, si_pid) == 8);
+static_assert(__builtin_offsetof(siginfo_t, si_status) == 16);
 static_assert(__builtin_offsetof(siginfo_t, si_overrun) == 20);
 static_assert(__builtin_offsetof(siginfo_t, si_value) == 24);
 static_assert(__builtin_offsetof(siginfo_t, si_addr) == 32);
@@ -253,6 +255,21 @@ struct sigaction {
 
 #define sa_handler __sa_handler.sa_handler
 #define sa_sigaction __sa_handler.sa_sigaction
+
+#ifdef __cplusplus
+/* Contract with the kernel syscall decoder, `SigactionAbi` in
+   kernel/syscall/src/syscalls/signal/action.rs, whose own assertions pin the same offsets.
+   `sa_flags` is the POSIX `int`, so the four bytes of alignment padding after it belong to no
+   field: a caller that sets `sa_flags` has no reason to initialize them, which is why the kernel
+   reads the flag word as 32 bits and never as a wider value that would include them. The asserted
+   values are LP64 (x86_64) offsets, which is the only ABI Roxy targets. */
+#if defined(__x86_64__)
+static_assert(sizeof(struct sigaction) == 32);
+static_assert(__builtin_offsetof(struct sigaction, sa_flags) == 8);
+static_assert(__builtin_offsetof(struct sigaction, sa_restorer) == 16);
+static_assert(__builtin_offsetof(struct sigaction, sa_mask) == 24);
+#endif
+#endif
 
 /*
  * The machine-context record an `SA_SIGINFO` handler receives a pointer to.
