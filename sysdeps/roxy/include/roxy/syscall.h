@@ -63,53 +63,52 @@ typedef long roxy_syscall_word_t;
 #define ROXY_SYS_SLEEP (ROXY_SYS_BASE + 34)
 #define ROXY_SYS_SEND_SIGNAL (ROXY_SYS_BASE + 35)
 #define ROXY_SYS_PPOLL (ROXY_SYS_BASE + 36)
-#define ROXY_SYS_PSELECT (ROXY_SYS_BASE + 37)
-#define ROXY_SYS_UNAME (ROXY_SYS_BASE + 38)
-#define ROXY_SYS_MKDIRAT (ROXY_SYS_BASE + 39)
-#define ROXY_SYS_UNLINKAT (ROXY_SYS_BASE + 40)
-#define ROXY_SYS_READLINKAT (ROXY_SYS_BASE + 41)
-#define ROXY_SYS_LINKAT (ROXY_SYS_BASE + 42)
-#define ROXY_SYS_SYMLINKAT (ROXY_SYS_BASE + 43)
-#define ROXY_SYS_RENAMEAT (ROXY_SYS_BASE + 44)
-#define ROXY_SYS_SYNC (ROXY_SYS_BASE + 45)
-#define ROXY_SYS_FSYNC (ROXY_SYS_BASE + 46)
-#define ROXY_SYS_FTRUNCATE (ROXY_SYS_BASE + 47)
-#define ROXY_SYS_SOCKETPAIR (ROXY_SYS_BASE + 48)
-#define ROXY_SYS_SOCKET (ROXY_SYS_BASE + 49)
-#define ROXY_SYS_BIND (ROXY_SYS_BASE + 50)
-#define ROXY_SYS_LISTEN (ROXY_SYS_BASE + 51)
-#define ROXY_SYS_ACCEPT (ROXY_SYS_BASE + 52)
-#define ROXY_SYS_CONNECT (ROXY_SYS_BASE + 53)
-#define ROXY_SYS_SOCKNAME (ROXY_SYS_BASE + 61)
-#define ROXY_SYS_PEERNAME (ROXY_SYS_BASE + 62)
-#define ROXY_SYS_SHUTDOWN (ROXY_SYS_BASE + 63)
-#define ROXY_SYS_GETSOCKOPT (ROXY_SYS_BASE + 64)
-#define ROXY_SYS_ACCESS (ROXY_SYS_BASE + 65)
-#define ROXY_SYS_RECVMSG (ROXY_SYS_BASE + 66)
-#define ROXY_SYS_SENDMSG (ROXY_SYS_BASE + 67)
-#define ROXY_SYS_PIPE (ROXY_SYS_BASE + 55)
-#define ROXY_SYS_DUP2 (ROXY_SYS_BASE + 56)
-#define ROXY_SYS_FCNTL (ROXY_SYS_BASE + 57)
-#define ROXY_SYS_UMASK (ROXY_SYS_BASE + 58)
-#define ROXY_SYS_CHMOD (ROXY_SYS_BASE + 59)
-#define ROXY_SYS_FCHMOD (ROXY_SYS_BASE + 60)
-#define ROXY_SYS_SET_PGID (ROXY_SYS_BASE + 68)
-#define ROXY_SYS_GET_PGID (ROXY_SYS_BASE + 69)
-#define ROXY_SYS_SET_SID (ROXY_SYS_BASE + 70)
-#define ROXY_SYS_WRITEV (ROXY_SYS_BASE + 71)
-#define ROXY_SYS_TTYNAME (ROXY_SYS_BASE + 72)
-#define ROXY_SYS_TIMER_CREATE (ROXY_SYS_BASE + 73)
-#define ROXY_SYS_TIMER_SETTIME (ROXY_SYS_BASE + 74)
-#define ROXY_SYS_TIMER_GETTIME (ROXY_SYS_BASE + 75)
-#define ROXY_SYS_TIMER_GETOVERRUN (ROXY_SYS_BASE + 76)
-#define ROXY_SYS_TIMER_DELETE (ROXY_SYS_BASE + 77)
-#define ROXY_SYS_THREAD_CREATE (ROXY_SYS_BASE + 78)
-#define ROXY_SYS_THREAD_EXIT (ROXY_SYS_BASE + 79)
-#define ROXY_SYS_GET_TID (ROXY_SYS_BASE + 80)
-#define ROXY_SYS_SIGTIMEDWAIT (ROXY_SYS_BASE + 81)
-#define ROXY_SYS_TGKILL (ROXY_SYS_BASE + 82)
-#define ROXY_SYS_CLOCK_GETRES (ROXY_SYS_BASE + 83)
-#define ROXY_SYS_OPENPTY (ROXY_SYS_BASE + 84)
+#define ROXY_SYS_UNAME (ROXY_SYS_BASE + 37)
+#define ROXY_SYS_MKDIRAT (ROXY_SYS_BASE + 38)
+#define ROXY_SYS_UNLINKAT (ROXY_SYS_BASE + 39)
+#define ROXY_SYS_READLINKAT (ROXY_SYS_BASE + 40)
+#define ROXY_SYS_LINKAT (ROXY_SYS_BASE + 41)
+#define ROXY_SYS_SYMLINKAT (ROXY_SYS_BASE + 42)
+#define ROXY_SYS_RENAMEAT (ROXY_SYS_BASE + 43)
+#define ROXY_SYS_SYNC (ROXY_SYS_BASE + 44)
+#define ROXY_SYS_FSYNC (ROXY_SYS_BASE + 45)
+#define ROXY_SYS_FTRUNCATE (ROXY_SYS_BASE + 46)
+#define ROXY_SYS_SOCKETPAIR (ROXY_SYS_BASE + 47)
+#define ROXY_SYS_SOCKET (ROXY_SYS_BASE + 48)
+#define ROXY_SYS_BIND (ROXY_SYS_BASE + 49)
+#define ROXY_SYS_LISTEN (ROXY_SYS_BASE + 50)
+#define ROXY_SYS_ACCEPT (ROXY_SYS_BASE + 51)
+#define ROXY_SYS_CONNECT (ROXY_SYS_BASE + 52)
+#define ROXY_SYS_SOCKNAME (ROXY_SYS_BASE + 60)
+#define ROXY_SYS_PEERNAME (ROXY_SYS_BASE + 61)
+#define ROXY_SYS_SHUTDOWN (ROXY_SYS_BASE + 62)
+#define ROXY_SYS_GETSOCKOPT (ROXY_SYS_BASE + 63)
+#define ROXY_SYS_ACCESS (ROXY_SYS_BASE + 64)
+#define ROXY_SYS_RECVMSG (ROXY_SYS_BASE + 65)
+#define ROXY_SYS_SENDMSG (ROXY_SYS_BASE + 66)
+#define ROXY_SYS_PIPE (ROXY_SYS_BASE + 54)
+#define ROXY_SYS_DUP2 (ROXY_SYS_BASE + 55)
+#define ROXY_SYS_FCNTL (ROXY_SYS_BASE + 56)
+#define ROXY_SYS_UMASK (ROXY_SYS_BASE + 57)
+#define ROXY_SYS_CHMOD (ROXY_SYS_BASE + 58)
+#define ROXY_SYS_FCHMOD (ROXY_SYS_BASE + 59)
+#define ROXY_SYS_SET_PGID (ROXY_SYS_BASE + 67)
+#define ROXY_SYS_GET_PGID (ROXY_SYS_BASE + 68)
+#define ROXY_SYS_SET_SID (ROXY_SYS_BASE + 69)
+#define ROXY_SYS_WRITEV (ROXY_SYS_BASE + 70)
+#define ROXY_SYS_TTYNAME (ROXY_SYS_BASE + 71)
+#define ROXY_SYS_TIMER_CREATE (ROXY_SYS_BASE + 72)
+#define ROXY_SYS_TIMER_SETTIME (ROXY_SYS_BASE + 73)
+#define ROXY_SYS_TIMER_GETTIME (ROXY_SYS_BASE + 74)
+#define ROXY_SYS_TIMER_GETOVERRUN (ROXY_SYS_BASE + 75)
+#define ROXY_SYS_TIMER_DELETE (ROXY_SYS_BASE + 76)
+#define ROXY_SYS_THREAD_CREATE (ROXY_SYS_BASE + 77)
+#define ROXY_SYS_THREAD_EXIT (ROXY_SYS_BASE + 78)
+#define ROXY_SYS_GET_TID (ROXY_SYS_BASE + 79)
+#define ROXY_SYS_SIGTIMEDWAIT (ROXY_SYS_BASE + 80)
+#define ROXY_SYS_TGKILL (ROXY_SYS_BASE + 81)
+#define ROXY_SYS_CLOCK_GETRES (ROXY_SYS_BASE + 82)
+#define ROXY_SYS_OPENPTY (ROXY_SYS_BASE + 83)
 
 typedef struct {
 	int64_t seconds;
@@ -133,6 +132,33 @@ typedef struct {
 	char name[256];
 	uint8_t padding[5];
 } roxy_dirent;
+
+/*
+ * Roxy's `poll` request record.
+ *
+ * One record per descriptor. `requested_events` names the conditions the caller waits for and
+ * `reported_events` the conditions the kernel observed to hold; both words are Roxy's own, one bit
+ * per condition. Because `requested_events` is a field of this record rather than a word shared
+ * with another personality, it has no foreign numbering to tell apart from Roxy's, and the kernel
+ * reports a bit no condition names as undefined. A negative `fd` reports nothing for its record.
+ *
+ * `ERROR` and `HANGUP` are reported whatever the request named, so no request can name them, while
+ * `INVALID_DESCRIPTOR` stands in for a descriptor that is not open.
+ *
+ * The kernel side is `kernel/syscall/src/syscalls/poll/abi.rs`.
+ */
+#define ROXY_POLL_READABLE (1u << 0)
+#define ROXY_POLL_PRIORITY (1u << 1)
+#define ROXY_POLL_WRITABLE (1u << 2)
+#define ROXY_POLL_ERROR (1u << 3)
+#define ROXY_POLL_HANGUP (1u << 4)
+#define ROXY_POLL_INVALID_DESCRIPTOR (1u << 5)
+
+typedef struct {
+	int32_t fd;
+	uint32_t requested_events;
+	uint32_t reported_events;
+} roxy_poll_request;
 
 /*
  * Roxy's `waitpid` status record.
@@ -182,6 +208,11 @@ static_assert(sizeof(roxy_wait_status) == 8);
 static_assert(alignof(roxy_wait_status) == 4);
 static_assert(offsetof(roxy_wait_status, kind) == 0);
 static_assert(offsetof(roxy_wait_status, code) == 4);
+static_assert(sizeof(roxy_poll_request) == 12);
+static_assert(alignof(roxy_poll_request) == 4);
+static_assert(offsetof(roxy_poll_request, fd) == 0);
+static_assert(offsetof(roxy_poll_request, requested_events) == 4);
+static_assert(offsetof(roxy_poll_request, reported_events) == 8);
 #endif
 
 /*
