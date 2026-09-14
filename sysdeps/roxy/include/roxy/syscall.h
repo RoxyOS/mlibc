@@ -134,6 +134,30 @@ typedef struct {
 	uint8_t padding[5];
 } roxy_dirent;
 
+/*
+ * Roxy's `waitpid` status record.
+ *
+ * `kind` names the state change the kernel observed, and `code` carries the exit code for
+ * `EXITED`, the signal number for `SIGNALED` and `STOPPED`, and zero for `CONTINUED`. The kernel
+ * produces the record and this libc renders it as the POSIX wait-status word `WIFEXITED` and its
+ * neighbours decode, so the POSIX bit layout stops at this boundary.
+ *
+ * The kind word needs no base above another personality's numbering the way a userspace-supplied
+ * word does, because the kernel produces it and only this libc reads it; zero is reserved instead,
+ * so an all-zero record is never a status.
+ *
+ * The kernel side is `kernel/syscall/src/syscalls/waitpid.rs`.
+ */
+#define ROXY_WAIT_KIND_EXITED 1
+#define ROXY_WAIT_KIND_SIGNALED 2
+#define ROXY_WAIT_KIND_STOPPED 3
+#define ROXY_WAIT_KIND_CONTINUED 4
+
+typedef struct {
+	uint32_t kind;
+	uint32_t code;
+} roxy_wait_status;
+
 #ifdef __cplusplus
 static_assert(sizeof(roxy_clock_result) == 16);
 static_assert(alignof(roxy_clock_result) == 8);
@@ -154,6 +178,10 @@ static_assert(offsetof(roxy_dirent, offset) == 8);
 static_assert(offsetof(roxy_dirent, record_size) == 16);
 static_assert(offsetof(roxy_dirent, type) == 18);
 static_assert(offsetof(roxy_dirent, name) == 19);
+static_assert(sizeof(roxy_wait_status) == 8);
+static_assert(alignof(roxy_wait_status) == 4);
+static_assert(offsetof(roxy_wait_status, kind) == 0);
+static_assert(offsetof(roxy_wait_status, code) == 4);
 #endif
 
 /*
