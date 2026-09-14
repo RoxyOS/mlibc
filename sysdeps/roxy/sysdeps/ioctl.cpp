@@ -1,7 +1,6 @@
 #include <errno.h>
 #include <mlibc/all-sysdeps.hpp>
 #include <roxy/syscall.h>
-#include <stdio.h>
 #include <sys/ioctl.h>
 #include <termios.h>
 
@@ -67,24 +66,6 @@ int Sysdeps<Tcsetwinsize>::operator()(int fd, const struct winsize *window_size)
 int Sysdeps<Tcflush>::operator()(int fd, int queue_selector) {
 	// TCFLSH carries the queue selector (TCIFLUSH/TCOFLUSH/TCIOFLUSH) by value, not as a pointer.
 	return terminal_ioctl(fd, TCFLSH, reinterpret_cast<void *>(static_cast<long>(queue_selector)));
-}
-
-int Sysdeps<Ptsname>::operator()(int fd, char *buffer, size_t length) {
-	unsigned int number = 0;
-	if (int error = terminal_ioctl(fd, TIOCGPTN, &number))
-		return error;
-
-	int written = snprintf(buffer, length, "/dev/pts/%u", number);
-	if (written < 0)
-		return errno ? errno : EIO;
-	if (static_cast<size_t>(written) >= length)
-		return ERANGE;
-	return 0;
-}
-
-int Sysdeps<Unlockpt>::operator()(int fd) {
-	int unlock = 0;
-	return terminal_ioctl(fd, TIOCSPTLCK, &unlock);
 }
 
 } // namespace mlibc

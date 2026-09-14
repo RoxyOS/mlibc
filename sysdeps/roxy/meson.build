@@ -24,6 +24,7 @@ rtld_sources += files(
 
 libc_sources += files(
 	'entry.cpp',
+	'pty.cpp',
 	'sysdeps/credentials.cpp',
 	'sysdeps/diag.cpp',
 	'sysdeps/filesystem.cpp',
@@ -48,6 +49,7 @@ libc_sources += files(
 if not no_headers
 	install_headers(
 		'include/paths.h',
+		'include/pty.h',
 	)
 
 	install_headers(

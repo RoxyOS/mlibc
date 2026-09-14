@@ -110,8 +110,6 @@ struct RoxySysdepTags :
 	TimerDelete,
 	GetItimer,
 	SetItimer,
-	Ptsname,
-	Unlockpt,
 	Tcflush,
 	Sigtimedwait,
 	Tgkill,

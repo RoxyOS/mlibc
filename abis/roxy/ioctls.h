@@ -43,16 +43,11 @@
 #define TIOCSCTTY (ROXY_IOCTL_TERMINAL + 8)
 #define TCFLSH (ROXY_IOCTL_TERMINAL + 9)
 
-/* Pseudo-terminal requests: the slave number and its lock. */
-#define ROXY_IOCTL_PTY (ROXY_IOCTL_BASE + 0x100u)
-#define TIOCGPTN ROXY_IOCTL_PTY
-#define TIOCSPTLCK (ROXY_IOCTL_PTY + 1)
-
 /* Framebuffer requests; the family's own header names them. */
-#define ROXY_IOCTL_FRAMEBUFFER (ROXY_IOCTL_BASE + 0x200u)
+#define ROXY_IOCTL_FRAMEBUFFER (ROXY_IOCTL_BASE + 0x100u)
 
 /* Requests that act on the open file description rather than on a device. */
-#define ROXY_IOCTL_DESCRIPTION (ROXY_IOCTL_BASE + 0x300u)
+#define ROXY_IOCTL_DESCRIPTION (ROXY_IOCTL_BASE + 0x200u)
 #define FIONBIO ROXY_IOCTL_DESCRIPTION
 
 #endif /* _ABIBITS_IOCTLS_H */
