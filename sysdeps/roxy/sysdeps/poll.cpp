@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <poll.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <sys/select.h>
 
@@ -71,6 +72,14 @@ roxy_poll_request *to_roxy_requests(struct pollfd *fds, nfds_t count, int *error
 
 	if (count == 0)
 		return nullptr;
+
+	// `count` is the caller's `nfds_t`, so the byte length it implies must be checked rather than
+	// wrapped: a count that overflows `size_t` would size the allocation smaller than the array the
+	// loop below fills. The kernel rejects the same count as invalid.
+	if (count > SIZE_MAX / sizeof(roxy_poll_request)) {
+		*error = EINVAL;
+		return nullptr;
+	}
 
 	auto *requests = static_cast<roxy_poll_request *>(malloc(count * sizeof(roxy_poll_request)));
 	if (!requests) {
