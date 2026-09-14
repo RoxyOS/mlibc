@@ -108,9 +108,7 @@ struct group_source_req {
 #define INADDR_NONE       ((in_addr_t) 0xffffffff)
 #define INADDR_LOOPBACK   ((in_addr_t) 0x7f000001)
 
-#define INADDR_UNSPEC_GROUP     ((in_addr_t) 0xe0000000)
 #define INADDR_ALLHOSTS_GROUP   ((in_addr_t) 0xe0000001)
-#define INADDR_MAX_LOCAL_GROUP  ((in_addr_t) 0xe00000ff)
 
 #define IN6ADDR_ANY_INIT      { { { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 } } }
 #define IN6ADDR_LOOPBACK_INIT { { { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 } } }
@@ -130,11 +128,9 @@ struct group_source_req {
 #define IPPROTO_PUP      12
 #define IPPROTO_UDP      17
 #define IPPROTO_IDP      22
-#define IPPROTO_TP       29
 #define IPPROTO_IPV6     41
 #define IPPROTO_ROUTING  43
 #define IPPROTO_FRAGMENT 44
-#define IPPROTO_RSVP     46
 #define IPPROTO_GRE      47
 #define IPPROTO_ESP      50
 #define IPPROTO_AH       51
@@ -149,35 +145,20 @@ struct group_source_req {
 
 #define IP_TOS 1
 #define IP_TTL 2
-#define IP_HDRINCL 3
 #define IP_OPTIONS 4
-#define IP_RECVOPTS 6
-#define IP_RETOPTS 7
 #define IP_PKTINFO 8
 #define IP_RECVERR 11
 #define IP_RECVTTL 12
 #define IP_RECVTOS 13
 #define IP_MULTICAST_IF 32
 #define IP_MULTICAST_TTL 33
-#define IP_MULTICAST_LOOP 34
-#define IP_ADD_MEMBERSHIP 35
-#define IP_DROP_MEMBERSHIP 36
-#define IP_UNBLOCK_SOURCE 37
-#define IP_BLOCK_SOURCE 38
-#define IP_ADD_SOURCE_MEMBERSHIP 39
-#define IP_DROP_SOURCE_MEMBERSHIP 40
 
 #if defined(_DEFAULT_SOURCE)
 #endif /* defined(_DEFAULT_SOURCE) */
 
 #define IPV6_CHECKSUM 7
-#define IPV6_2292HOPLIMIT 8
 #define IPV6_UNICAST_HOPS 16
-#define IPV6_MULTICAST_IF 17
 #define IPV6_MULTICAST_HOPS 18
-#define IPV6_MULTICAST_LOOP 19
-#define IPV6_JOIN_GROUP 20
-#define IPV6_LEAVE_GROUP 21
 #define IPV6_RECVERR 25
 #define IPV6_V6ONLY 26
 #define IPV6_RECVPKTINFO 49
