@@ -7,6 +7,47 @@
 #include <stddef.h>
 #include <stdint.h>
 
+/*
+ * The records these sysdeps carry.
+ *
+ * A record lives here rather than in `roxy/syscall.h` because this file is its only reader and
+ * writer: the syscall numbering is one namespace every sysdep issues from, but a record describes
+ * one syscall's own layout. The kernel side is `kernel/syscall/src/syscalls/fs/stat.rs` for the
+ * `stat` result and `kernel/syscall/src/syscalls/fs/read_entries.rs` for the directory entry; each
+ * is the userspace half of the same hand-maintained contract.
+ */
+
+typedef struct {
+	uint64_t file_id;
+	uint64_t size;
+	uint64_t blocks;
+	uint64_t hard_links;
+	uint32_t mode;
+	uint32_t block_size;
+} roxy_stat_result;
+
+static_assert(sizeof(roxy_stat_result) == 40);
+static_assert(alignof(roxy_stat_result) == 8);
+static_assert(offsetof(roxy_stat_result, file_id) == 0);
+static_assert(offsetof(roxy_stat_result, size) == 8);
+static_assert(offsetof(roxy_stat_result, blocks) == 16);
+static_assert(offsetof(roxy_stat_result, hard_links) == 24);
+static_assert(offsetof(roxy_stat_result, mode) == 32);
+static_assert(offsetof(roxy_stat_result, block_size) == 36);
+
+/* One directory entry. The kernel serializes these into the caller's buffer and `ReadEntries` hands
+ * that buffer back as an array of `struct dirent`, so the two layouts have to coincide field for
+ * field; the assertions below pin that, which is what makes the record's own offsets the POSIX
+ * ones and needs no second copy of them here. */
+typedef struct {
+	uint64_t inode;
+	int64_t offset;
+	uint16_t record_size;
+	uint8_t type;
+	char name[256];
+	uint8_t padding[5];
+} roxy_dirent;
+
 static_assert(sizeof(roxy_dirent) == sizeof(struct dirent));
 static_assert(offsetof(roxy_dirent, inode) == offsetof(struct dirent, d_ino));
 static_assert(offsetof(roxy_dirent, offset) == offsetof(struct dirent, d_off));

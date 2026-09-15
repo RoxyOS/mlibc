@@ -3,6 +3,7 @@
 #include <pthread.h>
 #include <roxy/syscall.h>
 #include <signal.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <sys/time.h>
@@ -10,6 +11,20 @@
 #include <unistd.h>
 
 #include "errors.hpp"
+
+/* Roxy's clock record, as `ClockGet` and `ClockGetRes` write it.
+ *
+ * The kernel side is `kernel/syscall/src/syscalls/clock/`; this is the userspace half of the same
+ * hand-maintained contract. */
+typedef struct {
+	int64_t seconds;
+	int64_t nanoseconds;
+} roxy_clock_result;
+
+static_assert(sizeof(roxy_clock_result) == 16);
+static_assert(alignof(roxy_clock_result) == 8);
+static_assert(offsetof(roxy_clock_result, seconds) == 0);
+static_assert(offsetof(roxy_clock_result, nanoseconds) == 8);
 
 namespace mlibc {
 
