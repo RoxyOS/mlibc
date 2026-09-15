@@ -23,6 +23,11 @@ typedef long roxy_syscall_word_t;
  * The kernel side is `kernel/syscall/src/numbers.rs`; this header is the userspace half of the
  * same hand-maintained contract and changes with it. Only this library reads these numbers, so a
  * change here does not reach a consumer's object files the way an `abi-bits/` macro does.
+ *
+ * The numbers are one namespace every sysdep issues from, so they are mirrored here from the
+ * kernel's single `numbers.rs`. A record describing one syscall's own layout is not part of that
+ * namespace: it lives at the top of the sysdep that carries it, so the only reader and writer of
+ * its layout is the file that owns the contract with that kernel handler.
  */
 #define ROXY_SYS_BASE 0x1000
 
@@ -110,111 +115,6 @@ typedef long roxy_syscall_word_t;
 #define ROXY_SYS_TGKILL (ROXY_SYS_BASE + 81)
 #define ROXY_SYS_CLOCK_GETRES (ROXY_SYS_BASE + 82)
 #define ROXY_SYS_OPENPTY (ROXY_SYS_BASE + 83)
-
-typedef struct {
-	int64_t seconds;
-	int64_t nanoseconds;
-} roxy_clock_result;
-
-typedef struct {
-	uint64_t file_id;
-	uint64_t size;
-	uint64_t blocks;
-	uint64_t hard_links;
-	uint32_t mode;
-	uint32_t block_size;
-} roxy_stat_result;
-
-typedef struct {
-	uint64_t inode;
-	int64_t offset;
-	uint16_t record_size;
-	uint8_t type;
-	char name[256];
-	uint8_t padding[5];
-} roxy_dirent;
-
-/*
- * Roxy's `poll` request record.
- *
- * One record per descriptor. `requested_events` names the conditions the caller waits for and
- * `reported_events` the conditions the kernel observed to hold; both words are Roxy's own, one bit
- * per condition. Because `requested_events` is a field of this record rather than a word shared
- * with another personality, it has no foreign numbering to tell apart from Roxy's, and the kernel
- * reports a bit no condition names as undefined. A negative `fd` reports nothing for its record.
- *
- * `ERROR` and `HANGUP` are reported whatever the request named, so no request can name them, while
- * `INVALID_DESCRIPTOR` stands in for a descriptor that is not open.
- *
- * The kernel side is `kernel/syscall/src/syscalls/poll/abi.rs`.
- */
-#define ROXY_POLL_READABLE (1u << 0)
-#define ROXY_POLL_PRIORITY (1u << 1)
-#define ROXY_POLL_WRITABLE (1u << 2)
-#define ROXY_POLL_ERROR (1u << 3)
-#define ROXY_POLL_HANGUP (1u << 4)
-#define ROXY_POLL_INVALID_DESCRIPTOR (1u << 5)
-
-typedef struct {
-	int32_t fd;
-	uint32_t requested_events;
-	uint32_t reported_events;
-} roxy_poll_request;
-
-/*
- * Roxy's `waitpid` status record.
- *
- * `kind` names the state change the kernel observed, and `code` carries the exit code for
- * `EXITED`, the signal number for `SIGNALED` and `STOPPED`, and zero for `CONTINUED`. The kernel
- * produces the record and this libc renders it as the POSIX wait-status word `WIFEXITED` and its
- * neighbours decode, so the POSIX bit layout stops at this boundary.
- *
- * The kind word needs no base above another personality's numbering the way a userspace-supplied
- * word does, because the kernel produces it and only this libc reads it; zero is reserved instead,
- * so an all-zero record is never a status.
- *
- * The kernel side is `kernel/syscall/src/syscalls/waitpid.rs`.
- */
-#define ROXY_WAIT_KIND_EXITED 1
-#define ROXY_WAIT_KIND_SIGNALED 2
-#define ROXY_WAIT_KIND_STOPPED 3
-#define ROXY_WAIT_KIND_CONTINUED 4
-
-typedef struct {
-	uint32_t kind;
-	uint32_t code;
-} roxy_wait_status;
-
-#ifdef __cplusplus
-static_assert(sizeof(roxy_clock_result) == 16);
-static_assert(alignof(roxy_clock_result) == 8);
-static_assert(offsetof(roxy_clock_result, seconds) == 0);
-static_assert(offsetof(roxy_clock_result, nanoseconds) == 8);
-static_assert(sizeof(roxy_stat_result) == 40);
-static_assert(alignof(roxy_stat_result) == 8);
-static_assert(offsetof(roxy_stat_result, file_id) == 0);
-static_assert(offsetof(roxy_stat_result, size) == 8);
-static_assert(offsetof(roxy_stat_result, blocks) == 16);
-static_assert(offsetof(roxy_stat_result, hard_links) == 24);
-static_assert(offsetof(roxy_stat_result, mode) == 32);
-static_assert(offsetof(roxy_stat_result, block_size) == 36);
-static_assert(sizeof(roxy_dirent) == 280);
-static_assert(alignof(roxy_dirent) == 8);
-static_assert(offsetof(roxy_dirent, inode) == 0);
-static_assert(offsetof(roxy_dirent, offset) == 8);
-static_assert(offsetof(roxy_dirent, record_size) == 16);
-static_assert(offsetof(roxy_dirent, type) == 18);
-static_assert(offsetof(roxy_dirent, name) == 19);
-static_assert(sizeof(roxy_wait_status) == 8);
-static_assert(alignof(roxy_wait_status) == 4);
-static_assert(offsetof(roxy_wait_status, kind) == 0);
-static_assert(offsetof(roxy_wait_status, code) == 4);
-static_assert(sizeof(roxy_poll_request) == 12);
-static_assert(alignof(roxy_poll_request) == 4);
-static_assert(offsetof(roxy_poll_request, fd) == 0);
-static_assert(offsetof(roxy_poll_request, requested_events) == 4);
-static_assert(offsetof(roxy_poll_request, reported_events) == 8);
-#endif
 
 /*
  * A syscall's outcome.

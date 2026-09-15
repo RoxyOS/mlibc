@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <poll.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <sys/select.h>
@@ -8,6 +9,42 @@
 #include <roxy/syscall.h>
 
 #include "errors.hpp"
+
+/*
+ * Roxy's `poll` request record and its condition words.
+ *
+ * One record per descriptor. `requested_events` names the conditions the caller waits for and
+ * `reported_events` the conditions the kernel observed to hold; both words are Roxy's own, one bit
+ * per condition. Because `requested_events` is a field of this record rather than a word shared
+ * with another personality, it has no foreign numbering to tell apart from Roxy's, and the kernel
+ * reports a bit no condition names as undefined. A negative `fd` reports nothing for its record.
+ *
+ * `ERROR` and `HANGUP` are reported whatever the request named, so no request can name them, while
+ * `INVALID_DESCRIPTOR` stands in for a descriptor that is not open.
+ *
+ * A record lives here rather than in `roxy/syscall.h` because this file is its only reader and
+ * writer: the syscall numbering is one namespace every sysdep issues from, but a record describes
+ * one syscall's own layout. The kernel side is `kernel/syscall/src/syscalls/poll/abi.rs`; this is
+ * the userspace half of the same hand-maintained contract.
+ */
+#define ROXY_POLL_READABLE (1u << 0)
+#define ROXY_POLL_PRIORITY (1u << 1)
+#define ROXY_POLL_WRITABLE (1u << 2)
+#define ROXY_POLL_ERROR (1u << 3)
+#define ROXY_POLL_HANGUP (1u << 4)
+#define ROXY_POLL_INVALID_DESCRIPTOR (1u << 5)
+
+typedef struct {
+	int32_t fd;
+	uint32_t requested_events;
+	uint32_t reported_events;
+} roxy_poll_request;
+
+static_assert(sizeof(roxy_poll_request) == 12);
+static_assert(alignof(roxy_poll_request) == 4);
+static_assert(offsetof(roxy_poll_request, fd) == 0);
+static_assert(offsetof(roxy_poll_request, requested_events) == 4);
+static_assert(offsetof(roxy_poll_request, reported_events) == 8);
 
 namespace mlibc {
 
