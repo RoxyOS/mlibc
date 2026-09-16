@@ -9,16 +9,6 @@
 #include <stdint.h>
 #include <string.h>
 
-/*
- * The records these sysdeps carry.
- *
- * A record lives here rather than in `roxy/syscall.h` because this file is its only reader and
- * writer: the syscall numbering is one namespace every sysdep issues from, but a record describes
- * one syscall's own layout. The kernel side is `kernel/syscall/src/syscalls/fs/stat.rs` for the
- * `stat` result and `kernel/syscall/src/syscalls/fs/read_entries.rs` for the directory entry; each
- * is the userspace half of the same hand-maintained contract.
- */
-
 /* The kind of file a `stat` result or a directory entry describes.
  *
  * The values are Roxy's own rather than POSIX's `S_IFMT` and `d_type` numbering, which are rendered
