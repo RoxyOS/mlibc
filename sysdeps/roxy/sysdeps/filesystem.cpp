@@ -135,46 +135,23 @@ unsigned char roxy_kind_to_posix_dirent_type(uint32_t kind) {
 	}
 }
 
-/* Renders the `record_bytes` bytes of records the kernel wrote at the front of `buffer` as the
- * `struct dirent` entries its consumers read, reporting their byte count through `rendered`.
+/* The POSIX entry a Roxy record describes.
  *
- * A record is no larger than the entry rendered from it, so the walk goes from the last record to
- * the first: writing an entry then only reaches into records already read. `d_reclen` and the
- * name's terminator are this library's conventions, which is why the record states neither.
- *
- * Returns `EOVERFLOW` when a record's position does not fit `d_off`. A position is an index into
- * the directory's entries, which live in memory, so no directory reaches it; the check is here so
- * that reaching it cannot go unreported. */
-int roxy_records_to_posix_dirents(void *buffer, size_t record_bytes, size_t *rendered) {
-	auto *bytes = static_cast<unsigned char *>(buffer);
-	size_t records = record_bytes / sizeof(roxy_dirent);
+ * `d_reclen` and the name's terminator are this library's conventions, which is why a record states
+ * neither. The entry is returned by value because a record and its entry occupy the same bytes in
+ * the buffer the kernel filled, so a caller that converts in place has to hold the entry somewhere
+ * before overwriting the record with it. */
+struct dirent roxy_record_to_posix_dirent(const roxy_dirent *record) {
+	struct dirent entry = {};
 
-	for(size_t index = records; index-- > 0;) {
-		auto *record = reinterpret_cast<roxy_dirent *>(bytes + index * sizeof(roxy_dirent));
-		auto *entry = reinterpret_cast<struct dirent *>(bytes + index * sizeof(struct dirent));
+	entry.d_ino = record->file_id;
+	entry.d_off = static_cast<off_t>(record->offset);
+	entry.d_reclen = sizeof(struct dirent);
+	entry.d_type = roxy_kind_to_posix_dirent_type(record->kind);
+	memcpy(entry.d_name, record->name, record->name_len);
+	entry.d_name[record->name_len] = '\0';
 
-		// Read every field before writing any: a record and its entry occupy the same bytes, so the
-		// entry's fields overwrite the record's as they are written.
-		uint64_t file_id = record->file_id;
-		uint64_t offset = record->offset;
-		size_t name_len = record->name_len;
-		unsigned char kind = record->kind;
-
-		if(offset > static_cast<uint64_t>(INT64_MAX))
-			return EOVERFLOW;
-
-		entry->d_ino = file_id;
-		entry->d_off = static_cast<off_t>(offset);
-		entry->d_reclen = sizeof(struct dirent);
-		entry->d_type = roxy_kind_to_posix_dirent_type(kind);
-		// The record's name sits where the entry's does not, and the two overlap; `memmove` handles
-		// the direction.
-		memmove(entry->d_name, record->name, name_len);
-		entry->d_name[name_len] = '\0';
-	}
-
-	*rendered = records * sizeof(struct dirent);
-	return 0;
+	return entry;
 }
 
 } // namespace
@@ -226,9 +203,24 @@ int Sysdeps<ReadEntries>::operator()(
 	if(result.error)
 		return static_cast<int>(result.error);
 
-	if(int e = roxy_records_to_posix_dirents(buffer, static_cast<size_t>(result.value), bytes_read); e)
-		return e;
+	// The kernel filled the buffer with records and the entries replacing them are no smaller, so the
+	// walk goes from the last record to the first: an entry is then written over records already read.
+	auto *bytes = static_cast<unsigned char *>(buffer);
+	size_t records = static_cast<size_t>(result.value) / sizeof(roxy_dirent);
 
+	for(size_t index = records; index-- > 0;) {
+		auto *record = reinterpret_cast<const roxy_dirent *>(bytes + index * sizeof(roxy_dirent));
+
+		// A record's position is an index into the directory's entries, which live in memory, so it
+		// fits `d_off`; the check is here so that reaching it cannot go unreported.
+		if(record->offset > static_cast<uint64_t>(INT64_MAX))
+			return EOVERFLOW;
+
+		struct dirent entry = roxy_record_to_posix_dirent(record);
+		memcpy(bytes + index * sizeof(struct dirent), &entry, sizeof(entry));
+	}
+
+	*bytes_read = records * sizeof(struct dirent);
 	return 0;
 }
 
