@@ -96,12 +96,12 @@ static_assert(sizeof(roxy_dirent) <= sizeof(struct dirent));
 
 namespace {
 
-/* The `S_IF*` type bits a `st_mode` carries for a Roxy file kind.
+/* The POSIX `S_IF*` type bits a `st_mode` carries for a Roxy file kind.
  *
  * POSIX numbers those bits itself and `S_ISDIR` and its neighbours read them, so the translation
  * from Roxy's kind word belongs here, where the record is decoded. A kind the kernel reports as
  * unknown contributes no type bit, which is how POSIX spells a `st_mode` whose type is not known. */
-mode_t file_type_bits(uint32_t kind) {
+mode_t posix_type_bits(uint32_t kind) {
 	switch(kind) {
 	case ROXY_FILE_KIND_REGULAR: return S_IFREG;
 	case ROXY_FILE_KIND_DIRECTORY: return S_IFDIR;
@@ -117,7 +117,7 @@ mode_t file_type_bits(uint32_t kind) {
 /* The `st_mode` a `stat` result describes: the kind as POSIX type bits plus the stored permission
  * bits, which are already the ones `st_mode` holds. */
 mode_t posix_mode_of(uint32_t kind, uint32_t permissions) {
-	return file_type_bits(kind) | static_cast<mode_t>(permissions);
+	return posix_type_bits(kind) | static_cast<mode_t>(permissions);
 }
 
 /* The `DT_*` byte a directory entry reports for a Roxy file kind. */
