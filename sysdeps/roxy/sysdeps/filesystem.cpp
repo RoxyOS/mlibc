@@ -141,7 +141,7 @@ unsigned char roxy_kind_to_posix_dirent_type(uint32_t kind) {
  * neither. The entry is returned by value because a record and its entry occupy the same bytes in
  * the buffer the kernel filled, so a caller that converts in place has to hold the entry somewhere
  * before overwriting the record with it. */
-struct dirent roxy_record_to_posix_dirent(const roxy_dirent *record) {
+struct dirent roxy_dirent_to_posix(const roxy_dirent *record) {
 	struct dirent entry = {};
 
 	entry.d_ino = record->file_id;
@@ -152,6 +152,22 @@ struct dirent roxy_record_to_posix_dirent(const roxy_dirent *record) {
 	entry.d_name[record->name_len] = '\0';
 
 	return entry;
+}
+
+/* The POSIX `struct stat` a Roxy `stat` result describes. */
+struct stat roxy_stat_result_to_posix(const roxy_stat_result *result) {
+	struct stat output = {};
+
+	output.st_ino = result->file_id;
+	output.st_mode = roxy_kind_to_posix_mode(result->kind, result->permissions);
+	output.st_nlink = result->hard_links;
+	// `blocks` is a count of 512-byte units of `size`, so it never exceeds `size` and the caller's
+	// range check on `st_size` covers `st_blocks` too.
+	output.st_size = result->size;
+	output.st_blksize = result->block_size;
+	output.st_blocks = result->blocks;
+
+	return output;
 }
 
 } // namespace
@@ -216,7 +232,7 @@ int Sysdeps<ReadEntries>::operator()(
 		if(record->offset > static_cast<uint64_t>(INT64_MAX))
 			return EOVERFLOW;
 
-		struct dirent entry = roxy_record_to_posix_dirent(record);
+		struct dirent entry = roxy_dirent_to_posix(record);
 		memcpy(bytes + index * sizeof(struct dirent), &entry, sizeof(entry));
 	}
 
@@ -377,16 +393,12 @@ int Sysdeps<Stat>::operator()(
 	);
 	if(result.error)
 		return static_cast<int>(result.error);
-	if(stat_result.size > INT64_MAX)
+
+	// A size that does not fit the `off_t` `st_size` holds is reported rather than truncated.
+	if(stat_result.size > static_cast<uint64_t>(INT64_MAX))
 		return EOVERFLOW;
 
-	*output = {};
-	output->st_ino = stat_result.file_id;
-	output->st_mode = roxy_kind_to_posix_mode(stat_result.kind, stat_result.permissions);
-	output->st_nlink = stat_result.hard_links;
-	output->st_size = stat_result.size;
-	output->st_blksize = stat_result.block_size;
-	output->st_blocks = stat_result.blocks;
+	*output = roxy_stat_result_to_posix(&stat_result);
 	return 0;
 }
 
