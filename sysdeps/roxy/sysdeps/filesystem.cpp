@@ -22,7 +22,8 @@
 /* The kind of file a `stat` result or a directory entry describes.
  *
  * The values are Roxy's own rather than POSIX's `S_IFMT` and `d_type` numbering, which are rendered
- * from these at the two places userspace compares them: `posix_mode_of` and `dirent_type_of` below.
+ * from these at the two places userspace compares them: `roxy_kind_to_posix_mode` and
+ * `roxy_kind_to_posix_dirent_type` below.
  * Zero is reserved, so an all-zero word names no kind. The kernel side is
  * `kernel/syscall/src/syscalls/fs/mod.rs`.
  */
@@ -39,9 +40,9 @@
  *
  * `kind` and `permissions` are separate fields, so a caller testing one cannot match bits of the
  * other. `permissions` keeps the POSIX `rwxrwxrwx`-plus-special-bit numbering, which is what
- * `chmod`, `mkdir`, and `open` pass and the filesystem stores; `posix_mode_of` combines it with the
- * type bits `st_mode` carries. `reserved` is always zero and makes the record's tail padding
- * explicit. */
+ * `chmod`, `mkdir`, and `open` pass and the filesystem stores; `roxy_kind_to_posix_mode` combines
+ * it with the type bits `st_mode` carries. `reserved` is always zero and makes the record's tail
+ * padding explicit. */
 typedef struct {
 	uint64_t file_id;
 	uint64_t size;
@@ -101,7 +102,7 @@ namespace {
  * POSIX numbers those bits itself and `S_ISDIR` and its neighbours read them, so the translation
  * from Roxy's kind word belongs here, where the record is decoded. A kind the kernel reports as
  * unknown contributes no type bit, which is how POSIX spells a `st_mode` whose type is not known. */
-mode_t posix_type_bits(uint32_t kind) {
+mode_t roxy_kind_to_posix_type_bits(uint32_t kind) {
 	switch(kind) {
 	case ROXY_FILE_KIND_REGULAR: return S_IFREG;
 	case ROXY_FILE_KIND_DIRECTORY: return S_IFDIR;
@@ -116,12 +117,12 @@ mode_t posix_type_bits(uint32_t kind) {
 
 /* The `st_mode` a `stat` result describes: the kind as POSIX type bits plus the stored permission
  * bits, which are already the ones `st_mode` holds. */
-mode_t posix_mode_of(uint32_t kind, uint32_t permissions) {
-	return posix_type_bits(kind) | static_cast<mode_t>(permissions);
+mode_t roxy_kind_to_posix_mode(uint32_t kind, uint32_t permissions) {
+	return roxy_kind_to_posix_type_bits(kind) | static_cast<mode_t>(permissions);
 }
 
 /* The `DT_*` byte a directory entry reports for a Roxy file kind. */
-unsigned char dirent_type_of(uint32_t kind) {
+unsigned char roxy_kind_to_posix_dirent_type(uint32_t kind) {
 	switch(kind) {
 	case ROXY_FILE_KIND_REGULAR: return DT_REG;
 	case ROXY_FILE_KIND_DIRECTORY: return DT_DIR;
@@ -144,7 +145,7 @@ unsigned char dirent_type_of(uint32_t kind) {
  * Returns `EOVERFLOW` when a record's position does not fit `d_off`. A position is an index into
  * the directory's entries, which live in memory, so no directory reaches it; the check is here so
  * that reaching it cannot go unreported. */
-int render_dirents(void *buffer, size_t record_bytes, size_t *rendered) {
+int roxy_records_to_posix_dirents(void *buffer, size_t record_bytes, size_t *rendered) {
 	auto *bytes = static_cast<unsigned char *>(buffer);
 	size_t records = record_bytes / sizeof(roxy_dirent);
 
@@ -165,7 +166,7 @@ int render_dirents(void *buffer, size_t record_bytes, size_t *rendered) {
 		entry->d_ino = file_id;
 		entry->d_off = static_cast<off_t>(offset);
 		entry->d_reclen = sizeof(struct dirent);
-		entry->d_type = dirent_type_of(kind);
+		entry->d_type = roxy_kind_to_posix_dirent_type(kind);
 		// The record's name sits where the entry's does not, and the two overlap; `memmove` handles
 		// the direction.
 		memmove(entry->d_name, record->name, name_len);
@@ -225,7 +226,7 @@ int Sysdeps<ReadEntries>::operator()(
 	if(result.error)
 		return static_cast<int>(result.error);
 
-	if(int e = render_dirents(buffer, static_cast<size_t>(result.value), bytes_read); e)
+	if(int e = roxy_records_to_posix_dirents(buffer, static_cast<size_t>(result.value), bytes_read); e)
 		return e;
 
 	return 0;
@@ -389,7 +390,7 @@ int Sysdeps<Stat>::operator()(
 
 	*output = {};
 	output->st_ino = stat_result.file_id;
-	output->st_mode = posix_mode_of(stat_result.kind, stat_result.permissions);
+	output->st_mode = roxy_kind_to_posix_mode(stat_result.kind, stat_result.permissions);
 	output->st_nlink = stat_result.hard_links;
 	output->st_size = stat_result.size;
 	output->st_blksize = stat_result.block_size;
