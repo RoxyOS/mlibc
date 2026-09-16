@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 
 /*
  * The records these sysdeps carry.
@@ -63,26 +64,35 @@ static_assert(offsetof(roxy_stat_result, permissions) == 36);
 static_assert(offsetof(roxy_stat_result, block_size) == 40);
 static_assert(offsetof(roxy_stat_result, reserved) == 44);
 
-/* One directory entry. The kernel serializes these into the caller's buffer and `ReadEntries` hands
- * that buffer back as an array of `struct dirent`, so the two layouts have to coincide field for
- * field; the assertions below pin that, which is what makes the record's own offsets the POSIX
- * ones and needs no second copy of them here. The `type` byte carries a `ROXY_FILE_KIND_*` word
- * rather than a `DT_*` one, and `ReadEntries` renders it in place before returning. */
+/* One directory entry, as the kernel writes it.
+ *
+ * The record carries what the kernel knows about an entry — the file it names, the position the
+ * directory resumes from, the length of its name, and the kind of file it is — and nothing about
+ * how a caller walks or renders it: it has no record size and does not terminate its name.
+ * `ReadEntries` renders the POSIX `struct dirent` its consumers read from a record, so the
+ * assertions below pin the fields that rendering reads rather than a correspondence with that
+ * struct. The kernel side is `kernel/syscall/src/syscalls/fs/read_entries.rs`. */
 typedef struct {
-	uint64_t inode;
-	int64_t offset;
-	uint16_t record_size;
-	uint8_t type;
+	uint64_t file_id;
+	uint64_t offset;
+	uint8_t name_len;
+	uint8_t kind;
+	uint8_t reserved[6];
 	char name[256];
-	uint8_t padding[5];
 } roxy_dirent;
 
-static_assert(sizeof(roxy_dirent) == sizeof(struct dirent));
-static_assert(offsetof(roxy_dirent, inode) == offsetof(struct dirent, d_ino));
-static_assert(offsetof(roxy_dirent, offset) == offsetof(struct dirent, d_off));
-static_assert(offsetof(roxy_dirent, record_size) == offsetof(struct dirent, d_reclen));
-static_assert(offsetof(roxy_dirent, type) == offsetof(struct dirent, d_type));
-static_assert(offsetof(roxy_dirent, name) == offsetof(struct dirent, d_name));
+static_assert(sizeof(roxy_dirent) == 280);
+static_assert(alignof(roxy_dirent) == 8);
+static_assert(offsetof(roxy_dirent, file_id) == 0);
+static_assert(offsetof(roxy_dirent, offset) == 8);
+static_assert(offsetof(roxy_dirent, name_len) == 16);
+static_assert(offsetof(roxy_dirent, kind) == 17);
+static_assert(offsetof(roxy_dirent, reserved) == 18);
+static_assert(offsetof(roxy_dirent, name) == 24);
+
+/* A record is never larger than the entry rendered from it, which is what keeps a batch the kernel
+ * filled to the buffer's record capacity renderable within it. */
+static_assert(sizeof(roxy_dirent) <= sizeof(struct dirent));
 
 namespace {
 
@@ -124,26 +134,46 @@ unsigned char dirent_type_of(uint32_t kind) {
 	}
 }
 
-/* Rewrites each record's kind word as the `DT_*` byte userspace compares against.
+/* Renders the `record_bytes` bytes of records the kernel wrote at the front of `buffer` as the
+ * `struct dirent` entries its consumers read, reporting their byte count through `rendered`.
  *
- * The kernel serializes `roxy_dirent` records into the caller's buffer and `ReadEntries` hands that
- * buffer back as an array of `struct dirent`, so a record's kind byte is an entry's `d_type` and
- * can be rendered in place, without a second buffer. The walk takes each record's own `d_reclen`,
- * which the kernel writes as the record size, so it assumes nothing about how many records a call
- * returned. */
-void render_dirent_types(void *buffer, size_t bytes_read) {
+ * A record is no larger than the entry rendered from it, so the walk goes from the last record to
+ * the first: writing an entry then only reaches into records already read. `d_reclen` and the
+ * name's terminator are this library's conventions, which is why the record states neither.
+ *
+ * Returns `EOVERFLOW` when a record's position does not fit `d_off`. A position is an index into
+ * the directory's entries, which live in memory, so no directory reaches it; the check is here so
+ * that reaching it cannot go unreported. */
+int render_dirents(void *buffer, size_t record_bytes, size_t *rendered) {
 	auto *bytes = static_cast<unsigned char *>(buffer);
-	size_t offset = 0;
+	size_t records = record_bytes / sizeof(roxy_dirent);
 
-	while(offset + offsetof(struct dirent, d_name) < bytes_read) {
-		auto *entry = reinterpret_cast<struct dirent *>(bytes + offset);
+	for(size_t index = records; index-- > 0;) {
+		auto *record = reinterpret_cast<roxy_dirent *>(bytes + index * sizeof(roxy_dirent));
+		auto *entry = reinterpret_cast<struct dirent *>(bytes + index * sizeof(struct dirent));
 
-		if(!entry->d_reclen)
-			break;
+		// Read every field before writing any: a record and its entry occupy the same bytes, so the
+		// entry's fields overwrite the record's as they are written.
+		uint64_t file_id = record->file_id;
+		uint64_t offset = record->offset;
+		size_t name_len = record->name_len;
+		unsigned char kind = record->kind;
 
-		entry->d_type = dirent_type_of(entry->d_type);
-		offset += entry->d_reclen;
+		if(offset > static_cast<uint64_t>(INT64_MAX))
+			return EOVERFLOW;
+
+		entry->d_ino = file_id;
+		entry->d_off = static_cast<off_t>(offset);
+		entry->d_reclen = sizeof(struct dirent);
+		entry->d_type = dirent_type_of(kind);
+		// The record's name sits where the entry's does not, and the two overlap; `memmove` handles
+		// the direction.
+		memmove(entry->d_name, record->name, name_len);
+		entry->d_name[name_len] = '\0';
 	}
+
+	*rendered = records * sizeof(struct dirent);
+	return 0;
 }
 
 } // namespace
@@ -181,17 +211,23 @@ int Sysdeps<ReadEntries>::operator()(
 	size_t max_size,
 	size_t *bytes_read
 ) {
+	// The kernel fills the buffer with records rather than entries, and a record is no larger than
+	// the entry rendered from it: asking for the records that fit the entries keeps every record
+	// that comes back renderable within `max_size`.
+	size_t capacity = (max_size / sizeof(struct dirent)) * sizeof(roxy_dirent);
+
 	auto result = roxy_syscall3(
 	    ROXY_SYS_READ_ENTRIES,
 	    handle,
 	    reinterpret_cast<long>(buffer),
-	    max_size
+	    capacity
 	);
 	if(result.error)
 		return static_cast<int>(result.error);
 
-	*bytes_read = static_cast<size_t>(result.value);
-	render_dirent_types(buffer, *bytes_read);
+	if(int e = render_dirents(buffer, static_cast<size_t>(result.value), bytes_read); e)
+		return e;
+
 	return 0;
 }
 
