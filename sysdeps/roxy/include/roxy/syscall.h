@@ -121,17 +121,6 @@ typedef long roxy_syscall_word_t;
 #define ROXY_SYS_SET_STATUS_FLAGS (ROXY_SYS_BASE + 87)
 
 /*
- * These option bits are private to their operation-specific Roxy syscalls. The libc translates
- * POSIX values before issuing them, so the words start at bit zero rather than using a base for
- * distinguishing another personality's command numbering.
- */
-#define ROXY_DESCRIPTOR_CLOSE_ON_EXEC (1 << 0)
-
-#define ROXY_DUP_CLOSE_ON_EXEC (1 << 0)
-/* Use the third argument as the minimum descriptor searched for the duplicate. */
-#define ROXY_DUP_MINIMUM_ARGUMENT (1 << 1)
-
-/*
  * A syscall's outcome.
  *
  * The kernel returns the value in `rax` and the error code in `r10`, with `0` in `r10` meaning
