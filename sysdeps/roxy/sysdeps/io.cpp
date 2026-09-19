@@ -5,12 +5,42 @@
 #include <roxy/syscall.h>
 
 #include <stdarg.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #include "errors.hpp"
 
 namespace mlibc {
 
 namespace {
+
+constexpr long ROXY_OPEN_ACCESS_READ_ONLY = 0;
+constexpr long ROXY_OPEN_ACCESS_WRITE_ONLY = ROXY_OPEN_ACCESS_READ_ONLY + 1;
+constexpr long ROXY_OPEN_ACCESS_READ_WRITE = ROXY_OPEN_ACCESS_READ_ONLY + 2;
+
+constexpr long ROXY_OPEN_FLAGS_BASE = 1L << 0;
+constexpr long ROXY_OPEN_CREATE = ROXY_OPEN_FLAGS_BASE;
+constexpr long ROXY_OPEN_EXCLUSIVE = ROXY_OPEN_FLAGS_BASE << 1;
+constexpr long ROXY_OPEN_TRUNCATE = ROXY_OPEN_FLAGS_BASE << 2;
+constexpr long ROXY_OPEN_APPEND = ROXY_OPEN_FLAGS_BASE << 3;
+constexpr long ROXY_OPEN_NONBLOCK = ROXY_OPEN_FLAGS_BASE << 4;
+constexpr long ROXY_OPEN_NOFOLLOW = ROXY_OPEN_FLAGS_BASE << 5;
+constexpr long ROXY_OPEN_LARGE_FILE = ROXY_OPEN_FLAGS_BASE << 6;
+constexpr long ROXY_OPEN_CLOEXEC = ROXY_OPEN_FLAGS_BASE << 7;
+
+struct roxy_open_request {
+	uint32_t access;
+	uint32_t padding;
+	uint64_t flags;
+	uint64_t mode;
+};
+
+static_assert(sizeof(roxy_open_request) == 24);
+static_assert(alignof(roxy_open_request) == 8);
+static_assert(offsetof(roxy_open_request, access) == 0);
+static_assert(offsetof(roxy_open_request, padding) == 4);
+static_assert(offsetof(roxy_open_request, flags) == 8);
+static_assert(offsetof(roxy_open_request, mode) == 16);
 
 long posix_descriptor_flags_to_roxy(int flags) {
 	return (flags & FD_CLOEXEC) ? ROXY_DESCRIPTOR_CLOSE_ON_EXEC : 0;
