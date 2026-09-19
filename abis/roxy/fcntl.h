@@ -45,24 +45,27 @@
 #define O_TTY_INIT 0
 
 /*
- * The fcntl command space.
+ * `F_GETFL` reports the file access mode and the file status flags, but not flags that only
+ * describe how a path was opened or resolved. The kernel's status word uses the same values as
+ * the Roxy open/status implementation, so the sysdep masks it to the application-visible access
+ * and status flags before returning it to POSIX callers.
+ */
+#define ROXY_STATUS_FLAGS_MASK (O_ACCMODE | O_APPEND | O_NONBLOCK | O_DSYNC | O_ASYNC | O_DIRECT | O_LARGEFILE | O_NOATIME)
+
+/*
+ * The Roxy `fcntl` command space.
  *
- * Commands carry Roxy's own numbers, laid out from ROXY_F_CMD_BASE so that a command below the
- * base cannot be one of ours: a program compiled against a foreign numbering (Linux's F_GETFD
- * is 1, F_DUPFD_CLOEXEC is 1030) hands the kernel a value it recognizes and reports, instead of
- * one that silently aliases an unrelated Roxy command.
- *
- * Every command this kernel does not implement is defined to F_UNSUPPORTED, which keeps ported
- * sources compiling while making the call unmissable at runtime. Because they all share one
- * value, two unsupported commands cannot appear as distinct `case` labels in a switch; no ported
- * source needs that, since none of them is served.
- *
- * The kernel side of this contract is kernel/syscall/src/syscalls/fcntl.rs.
+ * These numbers belong to the Roxy personality even though they are consumed by the libc
+ * `fcntl` wrapper rather than sent to the kernel. The wrapper translates each supported command
+ * into the operation-specific syscall in `kernel/syscall/src/syscalls/fd`, and reports the common
+ * `F_UNSUPPORTED` marker for every command the personality does not serve. Keeping the command
+ * word Roxy-owned prevents a caller compiled against another personality from being mistaken for
+ * a Roxy command before that translation occurs.
  */
 #define ROXY_F_CMD_BASE 0x1000u
 #define F_UNSUPPORTED 0x100u
 
-/* Commands the kernel implements; a value is the base plus the command's index. */
+/* Commands this library serves; a value is the Roxy base plus the command's index. */
 #define F_DUPFD (ROXY_F_CMD_BASE + 0)
 #define F_GETFD (ROXY_F_CMD_BASE + 1)
 #define F_SETFD (ROXY_F_CMD_BASE + 2)
@@ -70,8 +73,8 @@
 #define F_SETFL (ROXY_F_CMD_BASE + 4)
 #define F_DUPFD_CLOEXEC (ROXY_F_CMD_BASE + 5)
 
-/* Commands the kernel does not implement. The `64` spellings are kept because
-   ported sources name them explicitly. */
+/* Commands this library does not serve. The `64` spellings are kept because ported sources name
+   them explicitly. */
 #define F_GETLK64 F_UNSUPPORTED
 #define F_SETLK64 F_UNSUPPORTED
 #define F_SETLKW64 F_UNSUPPORTED
@@ -108,7 +111,7 @@
 #define F_WRLCK 1
 #define F_UNLCK 2
 
-/* Argument bit of the supported F_GETFD/F_SETFD. */
+/* The argument bit of the supported `F_GETFD`/`F_SETFD` commands. */
 #define FD_CLOEXEC 1
 
 /*

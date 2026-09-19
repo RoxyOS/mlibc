@@ -93,8 +93,8 @@ typedef long roxy_syscall_word_t;
 #define ROXY_SYS_RECVMSG (ROXY_SYS_BASE + 65)
 #define ROXY_SYS_SENDMSG (ROXY_SYS_BASE + 66)
 #define ROXY_SYS_PIPE (ROXY_SYS_BASE + 54)
-#define ROXY_SYS_DUP2 (ROXY_SYS_BASE + 55)
-#define ROXY_SYS_FCNTL (ROXY_SYS_BASE + 56)
+#define ROXY_SYS_DUP_ONTO (ROXY_SYS_BASE + 55)
+#define ROXY_SYS_DUP (ROXY_SYS_BASE + 56)
 #define ROXY_SYS_UMASK (ROXY_SYS_BASE + 57)
 #define ROXY_SYS_CHMOD (ROXY_SYS_BASE + 58)
 #define ROXY_SYS_FCHMOD (ROXY_SYS_BASE + 59)
@@ -115,6 +115,21 @@ typedef long roxy_syscall_word_t;
 #define ROXY_SYS_TGKILL (ROXY_SYS_BASE + 81)
 #define ROXY_SYS_CLOCK_GETRES (ROXY_SYS_BASE + 82)
 #define ROXY_SYS_OPENPTY (ROXY_SYS_BASE + 83)
+#define ROXY_SYS_GET_DESCRIPTOR_FLAGS (ROXY_SYS_BASE + 84)
+#define ROXY_SYS_SET_DESCRIPTOR_FLAGS (ROXY_SYS_BASE + 85)
+#define ROXY_SYS_GET_STATUS_FLAGS (ROXY_SYS_BASE + 86)
+#define ROXY_SYS_SET_STATUS_FLAGS (ROXY_SYS_BASE + 87)
+
+/*
+ * These option bits are private to their operation-specific Roxy syscalls. The libc translates
+ * POSIX values before issuing them, so the words start at bit zero rather than using a base for
+ * distinguishing another personality's command numbering.
+ */
+#define ROXY_DESCRIPTOR_CLOSE_ON_EXEC (1 << 0)
+
+#define ROXY_DUP_CLOSE_ON_EXEC (1 << 0)
+/* Use the third argument as the minimum descriptor searched for the duplicate. */
+#define ROXY_DUP_MINIMUM_ARGUMENT (1 << 1)
 
 /*
  * A syscall's outcome.
