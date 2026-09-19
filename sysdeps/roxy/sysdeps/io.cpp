@@ -20,21 +20,42 @@ int roxy_descriptor_flags_to_posix(long flags) {
 	return (flags & ROXY_DESCRIPTOR_CLOSE_ON_EXEC) ? FD_CLOEXEC : 0;
 }
 
-long posix_dup_options_to_roxy(int flags, bool minimum_argument) {
-	long options = minimum_argument ? ROXY_DUP_MINIMUM_ARGUMENT : 0;
-	if(flags & O_CLOEXEC)
-		options |= ROXY_DUP_CLOSE_ON_EXEC;
-	return options;
+long posix_open_access_to_roxy(int flags) {
+	switch(flags & O_ACCMODE) {
+		case O_RDONLY: return ROXY_OPEN_ACCESS_READ_ONLY;
+		case O_WRONLY: return ROXY_OPEN_ACCESS_WRITE_ONLY;
+		case O_RDWR: return ROXY_OPEN_ACCESS_READ_WRITE;
+		default: __builtin_unreachable();
+	}
+}
+
+long posix_open_flags_to_roxy(int flags) {
+	long roxy_flags = 0;
+	if(flags & O_CREAT) roxy_flags |= ROXY_OPEN_CREATE;
+	if(flags & O_EXCL) roxy_flags |= ROXY_OPEN_EXCLUSIVE;
+	if(flags & O_TRUNC) roxy_flags |= ROXY_OPEN_TRUNCATE;
+	if(flags & O_APPEND) roxy_flags |= ROXY_OPEN_APPEND;
+	if(flags & O_NONBLOCK) roxy_flags |= ROXY_OPEN_NONBLOCK;
+	if(flags & O_NOFOLLOW) roxy_flags |= ROXY_OPEN_NOFOLLOW;
+#ifdef O_LARGEFILE
+	if(flags & O_LARGEFILE) roxy_flags |= ROXY_OPEN_LARGE_FILE;
+#endif
+	if(flags & O_CLOEXEC) roxy_flags |= ROXY_OPEN_CLOEXEC;
+	return roxy_flags;
 }
 
 } // namespace
 
 int Sysdeps<Open>::operator()(const char *path, int flags, mode_t mode, int *fd) {
-	auto result = roxy_syscall3(
+	roxy_open_request request = {};
+	request.access = posix_open_access_to_roxy(flags);
+	request.flags = posix_open_flags_to_roxy(flags);
+	request.mode = mode;
+
+	auto result = roxy_syscall2(
 	    ROXY_SYS_OPEN,
 	    reinterpret_cast<long>(path),
-	    flags,
-	    mode
+	    reinterpret_cast<long>(&request)
 	);
 	if(result.error)
 		return static_cast<int>(result.error);

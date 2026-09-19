@@ -131,6 +131,46 @@ typedef long roxy_syscall_word_t;
 /* Use the third argument as the minimum descriptor searched for the duplicate. */
 #define ROXY_DUP_MINIMUM_ARGUMENT (1 << 1)
 
+/* Open's access selector and option bits are private to the Roxy open request record. */
+#define ROXY_OPEN_ACCESS_BASE (1U << 8)
+#define ROXY_OPEN_ACCESS_READ_ONLY ROXY_OPEN_ACCESS_BASE
+#define ROXY_OPEN_ACCESS_WRITE_ONLY (ROXY_OPEN_ACCESS_BASE << 1)
+#define ROXY_OPEN_ACCESS_READ_WRITE (ROXY_OPEN_ACCESS_BASE << 2)
+
+#define ROXY_OPEN_FLAGS_BASE (1ULL << 32)
+#define ROXY_OPEN_CREATE ROXY_OPEN_FLAGS_BASE
+#define ROXY_OPEN_EXCLUSIVE (ROXY_OPEN_FLAGS_BASE << 1)
+#define ROXY_OPEN_TRUNCATE (ROXY_OPEN_FLAGS_BASE << 2)
+#define ROXY_OPEN_APPEND (ROXY_OPEN_FLAGS_BASE << 3)
+#define ROXY_OPEN_NONBLOCK (ROXY_OPEN_FLAGS_BASE << 4)
+#define ROXY_OPEN_NOFOLLOW (ROXY_OPEN_FLAGS_BASE << 5)
+#define ROXY_OPEN_LARGE_FILE (ROXY_OPEN_FLAGS_BASE << 6)
+#define ROXY_OPEN_CLOEXEC (ROXY_OPEN_FLAGS_BASE << 7)
+
+/* Layout mirrored by kernel/syscall/src/syscalls/open.rs. */
+typedef struct {
+	uint32_t access;
+	uint32_t padding;
+	uint64_t flags;
+	uint64_t mode;
+} roxy_open_request;
+
+#ifdef __cplusplus
+static_assert(sizeof(roxy_open_request) == 24);
+static_assert(alignof(roxy_open_request) == 8);
+static_assert(offsetof(roxy_open_request, access) == 0);
+static_assert(offsetof(roxy_open_request, padding) == 4);
+static_assert(offsetof(roxy_open_request, flags) == 8);
+static_assert(offsetof(roxy_open_request, mode) == 16);
+#else
+_Static_assert(sizeof(roxy_open_request) == 24, "roxy_open_request size");
+_Static_assert(_Alignof(roxy_open_request) == 8, "roxy_open_request alignment");
+_Static_assert(offsetof(roxy_open_request, access) == 0, "roxy_open_request access");
+_Static_assert(offsetof(roxy_open_request, padding) == 4, "roxy_open_request padding");
+_Static_assert(offsetof(roxy_open_request, flags) == 8, "roxy_open_request flags");
+_Static_assert(offsetof(roxy_open_request, mode) == 16, "roxy_open_request mode");
+#endif
+
 /*
  * A syscall's outcome.
  *
