@@ -29,27 +29,39 @@ long posix_open_access_to_roxy(int flags) {
 	}
 }
 
-long posix_open_flags_to_roxy(int flags) {
-	long roxy_flags = 0;
-	if(flags & O_CREAT) roxy_flags |= ROXY_OPEN_CREATE;
-	if(flags & O_EXCL) roxy_flags |= ROXY_OPEN_EXCLUSIVE;
-	if(flags & O_TRUNC) roxy_flags |= ROXY_OPEN_TRUNCATE;
-	if(flags & O_APPEND) roxy_flags |= ROXY_OPEN_APPEND;
-	if(flags & O_NONBLOCK) roxy_flags |= ROXY_OPEN_NONBLOCK;
-	if(flags & O_NOFOLLOW) roxy_flags |= ROXY_OPEN_NOFOLLOW;
+bool posix_open_flags_to_roxy(int flags, long *roxy_flags) {
+	int supported = O_ACCMODE | O_CREAT | O_EXCL | O_TRUNC | O_APPEND | O_NONBLOCK | O_NOFOLLOW | O_CLOEXEC;
 #ifdef O_LARGEFILE
-	if(flags & O_LARGEFILE) roxy_flags |= ROXY_OPEN_LARGE_FILE;
+	supported |= O_LARGEFILE;
 #endif
-	if(flags & O_CLOEXEC) roxy_flags |= ROXY_OPEN_CLOEXEC;
-	return roxy_flags;
+	if(flags & ~supported)
+		return false;
+
+	long translated = 0;
+	if(flags & O_CREAT) translated |= ROXY_OPEN_CREATE;
+	if(flags & O_EXCL) translated |= ROXY_OPEN_EXCLUSIVE;
+	if(flags & O_TRUNC) translated |= ROXY_OPEN_TRUNCATE;
+	if(flags & O_APPEND) translated |= ROXY_OPEN_APPEND;
+	if(flags & O_NONBLOCK) translated |= ROXY_OPEN_NONBLOCK;
+	if(flags & O_NOFOLLOW) translated |= ROXY_OPEN_NOFOLLOW;
+#ifdef O_LARGEFILE
+	if(flags & O_LARGEFILE) translated |= ROXY_OPEN_LARGE_FILE;
+#endif
+	if(flags & O_CLOEXEC) translated |= ROXY_OPEN_CLOEXEC;
+	*roxy_flags = translated;
+	return true;
 }
 
 } // namespace
 
 int Sysdeps<Open>::operator()(const char *path, int flags, mode_t mode, int *fd) {
+	long roxy_flags = 0;
+	if(!posix_open_flags_to_roxy(flags, &roxy_flags))
+		return EINVAL;
+
 	roxy_open_request request = {};
 	request.access = posix_open_access_to_roxy(flags);
-	request.flags = posix_open_flags_to_roxy(flags);
+	request.flags = roxy_flags;
 	request.mode = mode;
 
 	auto result = roxy_syscall2(
