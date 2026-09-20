@@ -1,18 +1,115 @@
+#include <errno.h>
+#include <fcntl.h>
 #include <mlibc/all-sysdeps.hpp>
+#include <mlibc/debug.hpp>
 #include <roxy/syscall.h>
 
 #include <stdarg.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #include "errors.hpp"
 
 namespace mlibc {
 
+namespace {
+
+constexpr long ROXY_OPEN_ACCESS_READ_ONLY = 0;
+constexpr long ROXY_OPEN_ACCESS_WRITE_ONLY = ROXY_OPEN_ACCESS_READ_ONLY + 1;
+constexpr long ROXY_OPEN_ACCESS_READ_WRITE = ROXY_OPEN_ACCESS_READ_ONLY + 2;
+
+constexpr long ROXY_DESCRIPTOR_CLOSE_ON_EXEC = 1L << 0;
+constexpr long ROXY_DUP_CLOSE_ON_EXEC = 1L << 0;
+constexpr long ROXY_DUP_MINIMUM_ARGUMENT = 1L << 1;
+
+
+constexpr long ROXY_OPEN_FLAGS_BASE = 1L << 0;
+constexpr long ROXY_OPEN_CREATE = ROXY_OPEN_FLAGS_BASE;
+constexpr long ROXY_OPEN_EXCLUSIVE = ROXY_OPEN_FLAGS_BASE << 1;
+constexpr long ROXY_OPEN_TRUNCATE = ROXY_OPEN_FLAGS_BASE << 2;
+constexpr long ROXY_OPEN_APPEND = ROXY_OPEN_FLAGS_BASE << 3;
+constexpr long ROXY_OPEN_NONBLOCK = ROXY_OPEN_FLAGS_BASE << 4;
+constexpr long ROXY_OPEN_NOFOLLOW = ROXY_OPEN_FLAGS_BASE << 5;
+constexpr long ROXY_OPEN_LARGE_FILE = ROXY_OPEN_FLAGS_BASE << 6;
+constexpr long ROXY_OPEN_CLOEXEC = ROXY_OPEN_FLAGS_BASE << 7;
+
+struct roxy_open_request {
+	uint32_t access;
+	uint32_t padding;
+	uint64_t flags;
+	uint64_t mode;
+};
+
+static_assert(sizeof(roxy_open_request) == 24);
+static_assert(alignof(roxy_open_request) == 8);
+static_assert(offsetof(roxy_open_request, access) == 0);
+static_assert(offsetof(roxy_open_request, padding) == 4);
+static_assert(offsetof(roxy_open_request, flags) == 8);
+static_assert(offsetof(roxy_open_request, mode) == 16);
+
+long posix_descriptor_flags_to_roxy(int flags) {
+	return (flags & FD_CLOEXEC) ? ROXY_DESCRIPTOR_CLOSE_ON_EXEC : 0;
+}
+
+int roxy_descriptor_flags_to_posix(long flags) {
+	return (flags & ROXY_DESCRIPTOR_CLOSE_ON_EXEC) ? FD_CLOEXEC : 0;
+}
+
+long posix_dup_options_to_roxy(int flags, bool minimum_argument) {
+	long options = minimum_argument ? ROXY_DUP_MINIMUM_ARGUMENT : 0;
+	if(flags & O_CLOEXEC)
+		options |= ROXY_DUP_CLOSE_ON_EXEC;
+	return options;
+}
+
+long posix_open_access_to_roxy(int flags) {
+	switch(flags & O_ACCMODE) {
+		case O_RDONLY: return ROXY_OPEN_ACCESS_READ_ONLY;
+		case O_WRONLY: return ROXY_OPEN_ACCESS_WRITE_ONLY;
+		case O_RDWR: return ROXY_OPEN_ACCESS_READ_WRITE;
+		default: __builtin_unreachable();
+	}
+}
+
+bool posix_open_flags_to_roxy(int flags, long *roxy_flags) {
+	int supported = O_ACCMODE | O_CREAT | O_EXCL | O_TRUNC | O_APPEND | O_NONBLOCK | O_NOFOLLOW | O_CLOEXEC;
+#ifdef O_LARGEFILE
+	supported |= O_LARGEFILE;
+#endif
+	if(flags & ~supported)
+		return false;
+
+	long translated = 0;
+	if(flags & O_CREAT) translated |= ROXY_OPEN_CREATE;
+	if(flags & O_EXCL) translated |= ROXY_OPEN_EXCLUSIVE;
+	if(flags & O_TRUNC) translated |= ROXY_OPEN_TRUNCATE;
+	if(flags & O_APPEND) translated |= ROXY_OPEN_APPEND;
+	if(flags & O_NONBLOCK) translated |= ROXY_OPEN_NONBLOCK;
+	if(flags & O_NOFOLLOW) translated |= ROXY_OPEN_NOFOLLOW;
+#ifdef O_LARGEFILE
+	if(flags & O_LARGEFILE) translated |= ROXY_OPEN_LARGE_FILE;
+#endif
+	if(flags & O_CLOEXEC) translated |= ROXY_OPEN_CLOEXEC;
+	*roxy_flags = translated;
+	return true;
+}
+
+} // namespace
+
 int Sysdeps<Open>::operator()(const char *path, int flags, mode_t mode, int *fd) {
-	auto result = roxy_syscall3(
+	long roxy_flags = 0;
+	if(!posix_open_flags_to_roxy(flags, &roxy_flags))
+		return EINVAL;
+
+	roxy_open_request request = {};
+	request.access = posix_open_access_to_roxy(flags);
+	request.flags = roxy_flags;
+	request.mode = mode;
+
+	auto result = roxy_syscall2(
 	    ROXY_SYS_OPEN,
 	    reinterpret_cast<long>(path),
-	    flags,
-	    mode
+	    reinterpret_cast<long>(&request)
 	);
 	if(result.error)
 		return static_cast<int>(result.error);
@@ -49,8 +146,12 @@ int Sysdeps<Pipe>::operator()(int *fds, int flags) {
 }
 
 int Sysdeps<Dup>::operator()(int fd, int flags, int *newfd) {
-	// dup(fd) = fcntl(fd, F_DUPFD, 0): returns the lowest available fd >= 0.
-	auto raw = roxy_syscall3(ROXY_SYS_FCNTL, fd, 0 /* F_DUPFD */, 0);
+	// `dup` takes the options word and, when the caller named one, the minimum descriptor.
+	// Without the minimum option the kernel searches from zero, so the third argument is
+	// passed only to carry it.
+	long options = posix_dup_options_to_roxy(flags, false);
+
+	auto raw = roxy_syscall3(ROXY_SYS_DUP, fd, options, 0);
 	if(int error = syscall_error(raw); error)
 		return error;
 	*newfd = static_cast<int>(raw.value);
@@ -58,19 +159,76 @@ int Sysdeps<Dup>::operator()(int fd, int flags, int *newfd) {
 }
 
 int Sysdeps<Dup2>::operator()(int oldfd, int flags, int newfd) {
-	// The kernel ABI takes (oldfd, newfd, flags); the mlibc tag passes (fd, flags, newfd).
-	auto result = roxy_syscall3(ROXY_SYS_DUP2, oldfd, newfd, flags);
+	// The kernel ABI takes (oldfd, newfd, descriptor flags); the mlibc tag passes
+	// (fd, flags, newfd). The flags are POSIX's close-on-exec, which is the one descriptor flag
+	// the kernel has.
+	long descriptor_flags = posix_descriptor_flags_to_roxy(flags);
+
+	auto result = roxy_syscall3(ROXY_SYS_DUP_ONTO, oldfd, newfd, descriptor_flags);
 	return syscall_error(result);
 }
 
 int Sysdeps<Fcntl>::operator()(int fd, int command, va_list args, int *result) {
-	auto argument = va_arg(args, unsigned long);
-	auto raw = roxy_syscall3(ROXY_SYS_FCNTL, fd, command, argument);
-	if(int error = syscall_error(raw); error)
-		return error;
+	switch(command) {
+		case F_DUPFD:
+		case F_DUPFD_CLOEXEC: {
+			auto argument = va_arg(args, int);
+			long options = posix_dup_options_to_roxy(
+			    command == F_DUPFD_CLOEXEC ? O_CLOEXEC : 0,
+			    true
+			);
 
-	*result = static_cast<int>(raw.value);
-	return 0;
+			auto raw = roxy_syscall3(ROXY_SYS_DUP, fd, options, static_cast<long>(argument));
+			if(int error = syscall_error(raw); error)
+				return error;
+			*result = static_cast<int>(raw.value);
+			return 0;
+		}
+
+		case F_GETFD: {
+			auto raw = roxy_syscall1(ROXY_SYS_GET_DESCRIPTOR_FLAGS, fd);
+			if(int error = syscall_error(raw); error)
+				return error;
+
+			// POSIX spells close-on-exec as 1; the kernel reports its own word.
+			*result = roxy_descriptor_flags_to_posix(raw.value);
+			return 0;
+		}
+
+		case F_SETFD: {
+			auto argument = va_arg(args, int);
+			long descriptor_flags = posix_descriptor_flags_to_roxy(argument);
+
+			return syscall_error(
+			    roxy_syscall2(ROXY_SYS_SET_DESCRIPTOR_FLAGS, fd, descriptor_flags)
+			);
+		}
+
+		case F_GETFL: {
+			auto raw = roxy_syscall1(ROXY_SYS_GET_STATUS_FLAGS, fd);
+			if(int error = syscall_error(raw); error)
+				return error;
+
+			// The status word is the `O_*` word minus the flags that only describe creation, so a
+			// caller can hand the result straight back to `F_SETFL`.
+			*result = static_cast<int>(raw.value) & ROXY_STATUS_FLAGS_MASK;
+			return 0;
+		}
+
+		case F_SETFL: {
+			auto argument = va_arg(args, int);
+			// The access mode is preserved by the kernel, which is what F_SETFL requires; every
+			// other bit is either applied or reported by the kernel's own parser.
+			return syscall_error(
+			    roxy_syscall2(ROXY_SYS_SET_STATUS_FLAGS, fd, static_cast<long>(argument))
+			);
+		}
+	}
+
+	// Every other command is one this library does not serve. The kernel serves none of them
+	// either, so the diagnostic is emitted here rather than at the syscall boundary.
+	mlibc::infoLogger() << "fcntl: unsupported command " << command << frg::endlog;
+	return ENOTSUP;
 }
 
 } // namespace mlibc
