@@ -102,7 +102,7 @@ typedef long roxy_syscall_word_t;
 #define ROXY_SYS_GET_PGID (ROXY_SYS_BASE + 68)
 #define ROXY_SYS_SET_SID (ROXY_SYS_BASE + 69)
 #define ROXY_SYS_WRITEV (ROXY_SYS_BASE + 70)
-#define ROXY_SYS_TTYNAME (ROXY_SYS_BASE + 71)
+/* ROXY_SYS_BASE + 71 is reserved; ttyname uses TIOCGNAME through ioctl. */
 #define ROXY_SYS_TIMER_CREATE (ROXY_SYS_BASE + 72)
 #define ROXY_SYS_TIMER_SETTIME (ROXY_SYS_BASE + 73)
 #define ROXY_SYS_TIMER_GETTIME (ROXY_SYS_BASE + 74)

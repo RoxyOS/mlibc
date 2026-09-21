@@ -42,6 +42,7 @@
 #define TIOCSPGRP (ROXY_IOCTL_TERMINAL + 7)
 #define TIOCSCTTY (ROXY_IOCTL_TERMINAL + 8)
 #define TCFLSH (ROXY_IOCTL_TERMINAL + 9)
+#define TIOCGNAME (ROXY_IOCTL_TERMINAL + 10)
 
 /* Framebuffer requests; the family's own header names them. */
 #define ROXY_IOCTL_FRAMEBUFFER (ROXY_IOCTL_BASE + 0x100u)
