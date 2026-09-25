@@ -3,6 +3,8 @@
 #include <mlibc/all-sysdeps.hpp>
 #include <roxy/syscall.h>
 
+#include "errors.hpp"
+
 namespace mlibc {
 
 int Sysdeps<Socketpair>::operator()(int domain, int type_and_flags, int proto, int *fds) {
@@ -14,15 +16,14 @@ int Sysdeps<Socketpair>::operator()(int domain, int type_and_flags, int proto, i
 	    reinterpret_cast<long>(fds)
 	);
 
-	return result.value < 0 ? static_cast<int>(result.error) : 0;
+	return syscall_error(result);
 }
 
 int Sysdeps<Socket>::operator()(int family, int type, int protocol, int *fd) {
 	auto result = roxy_syscall3(ROXY_SYS_SOCKET, family, type, protocol);
 
-	if (result.value < 0) {
-		return static_cast<int>(result.error);
-	}
+	if (int error = syscall_error(result); error)
+		return error;
 
 	*fd = static_cast<int>(result.value);
 	return 0;
@@ -36,13 +37,13 @@ int Sysdeps<Bind>::operator()(int fd, const struct sockaddr *addr_ptr, socklen_t
 	    addr_length
 	);
 
-	return result.value < 0 ? static_cast<int>(result.error) : 0;
+	return syscall_error(result);
 }
 
 int Sysdeps<Listen>::operator()(int fd, int backlog) {
 	auto result = roxy_syscall2(ROXY_SYS_LISTEN, fd, backlog);
 
-	return result.value < 0 ? static_cast<int>(result.error) : 0;
+	return syscall_error(result);
 }
 
 int Sysdeps<Accept>::operator()(
@@ -59,9 +60,8 @@ int Sysdeps<Accept>::operator()(
 
 	auto result = roxy_syscall1(ROXY_SYS_ACCEPT, fd);
 
-	if (result.value < 0) {
-		return static_cast<int>(result.error);
-	}
+	if (int error = syscall_error(result); error)
+		return error;
 
 	*newfd = static_cast<int>(result.value);
 
@@ -87,7 +87,7 @@ int Sysdeps<Connect>::operator()(int fd, const struct sockaddr *addr_ptr, sockle
 	    addr_length
 	);
 
-	return result.value < 0 ? static_cast<int>(result.error) : 0;
+	return syscall_error(result);
 }
 
 int Sysdeps<Sockname>::operator()(
@@ -104,7 +104,7 @@ int Sysdeps<Sockname>::operator()(
 	    reinterpret_cast<long>(actual_length)
 	);
 
-	return result.value < 0 ? static_cast<int>(result.error) : 0;
+	return syscall_error(result);
 }
 
 int Sysdeps<Peername>::operator()(
@@ -121,13 +121,13 @@ int Sysdeps<Peername>::operator()(
 	    reinterpret_cast<long>(actual_length)
 	);
 
-	return result.value < 0 ? static_cast<int>(result.error) : 0;
+	return syscall_error(result);
 }
 
 int Sysdeps<Shutdown>::operator()(int fd, int how) {
 	auto result = roxy_syscall2(ROXY_SYS_SHUTDOWN, fd, how);
 
-	return result.value < 0 ? static_cast<int>(result.error) : 0;
+	return syscall_error(result);
 }
 
 int Sysdeps<GetSockopt>::operator()(
@@ -146,9 +146,8 @@ int Sysdeps<GetSockopt>::operator()(
 	    reinterpret_cast<long>(size)
 	);
 
-	if (result.value < 0) {
-		return static_cast<int>(result.error);
-	}
+	if (int error = syscall_error(result); error)
+		return error;
 
 	return 0;
 }
@@ -166,12 +165,7 @@ int Sysdeps<MsgSend>::operator()(
 	    flags
 	);
 
-	if (result.value < 0) {
-		return static_cast<int>(result.error);
-	}
-
-	*length = static_cast<ssize_t>(result.value);
-	return 0;
+	return syscall_result(result, length);
 }
 
 int Sysdeps<MsgRecv>::operator()(
@@ -187,12 +181,7 @@ int Sysdeps<MsgRecv>::operator()(
 	    flags
 	);
 
-	if (result.value < 0) {
-		return static_cast<int>(result.error);
-	}
-
-	*length = static_cast<ssize_t>(result.value);
-	return 0;
+	return syscall_result(result, length);
 }
 
 } // namespace mlibc
