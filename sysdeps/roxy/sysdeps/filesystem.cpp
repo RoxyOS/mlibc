@@ -9,6 +9,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "errors.hpp"
+
 /* The kind of file a `stat` result or a directory entry describes.
  *
  * The values are Roxy's own rather than POSIX's `S_IFMT` and `d_type` numbering, which are rendered
@@ -167,7 +169,7 @@ namespace mlibc {
 int Sysdeps<Chdir>::operator()(const char *path) {
 	auto result = roxy_syscall1(ROXY_SYS_CHDIR, reinterpret_cast<long>(path));
 
-	return result.value < 0 ? static_cast<int>(result.error) : 0;
+	return syscall_error(result);
 }
 
 int Sysdeps<GetCwd>::operator()(char *buffer, size_t size) {
@@ -177,7 +179,7 @@ int Sysdeps<GetCwd>::operator()(char *buffer, size_t size) {
 	    size
 	);
 
-	return result.value < 0 ? static_cast<int>(result.error) : 0;
+	return syscall_error(result);
 }
 
 int Sysdeps<OpenDir>::operator()(const char *path, int *handle) {
@@ -242,7 +244,7 @@ int Sysdeps<Mkdirat>::operator()(int dirfd, const char *path, mode_t mode) {
 	    mode
 	);
 
-	return result.value < 0 ? static_cast<int>(result.error) : 0;
+	return syscall_error(result);
 }
 
 int Sysdeps<Rmdir>::operator()(const char *path) {
@@ -257,7 +259,7 @@ int Sysdeps<Unlinkat>::operator()(int dirfd, const char *path, int flags) {
 	    flags
 	);
 
-	return result.value < 0 ? static_cast<int>(result.error) : 0;
+	return syscall_error(result);
 }
 
 int Sysdeps<Readlink>::operator()(
@@ -310,7 +312,7 @@ int Sysdeps<Linkat>::operator()(
 	    flags
 	);
 
-	return result.value < 0 ? static_cast<int>(result.error) : 0;
+	return syscall_error(result);
 }
 
 int Sysdeps<Symlink>::operator()(const char *target_path, const char *link_path) {
@@ -325,7 +327,7 @@ int Sysdeps<Symlinkat>::operator()(const char *target_path, int dirfd, const cha
 	    reinterpret_cast<long>(link_path)
 	);
 
-	return result.value < 0 ? static_cast<int>(result.error) : 0;
+	return syscall_error(result);
 }
 
 int Sysdeps<Rename>::operator()(const char *path, const char *new_path) {
@@ -346,7 +348,7 @@ int Sysdeps<Renameat>::operator()(
 	    reinterpret_cast<long>(new_path)
 	);
 
-	return result.value < 0 ? static_cast<int>(result.error) : 0;
+	return syscall_error(result);
 }
 
 void Sysdeps<Sync>::operator()() {
@@ -356,13 +358,13 @@ void Sysdeps<Sync>::operator()() {
 int Sysdeps<Fsync>::operator()(int fd) {
 	auto result = roxy_syscall1(ROXY_SYS_FSYNC, fd);
 
-	return result.value < 0 ? static_cast<int>(result.error) : 0;
+	return syscall_error(result);
 }
 
 int Sysdeps<Ftruncate>::operator()(int fd, size_t size) {
 	auto result = roxy_syscall2(ROXY_SYS_FTRUNCATE, fd, size);
 
-	return result.value < 0 ? static_cast<int>(result.error) : 0;
+	return syscall_error(result);
 }
 
 int Sysdeps<Stat>::operator()(
@@ -414,19 +416,19 @@ int Sysdeps<Umask>::operator()(mode_t mode, mode_t *old) {
 int Sysdeps<Chmod>::operator()(const char *pathname, mode_t mode) {
 	auto result = roxy_syscall2(ROXY_SYS_CHMOD, reinterpret_cast<long>(pathname), mode);
 
-	return result.value < 0 ? static_cast<int>(result.error) : 0;
+	return syscall_error(result);
 }
 
 int Sysdeps<Fchmod>::operator()(int fd, mode_t mode) {
 	auto result = roxy_syscall2(ROXY_SYS_FCHMOD, fd, mode);
 
-	return result.value < 0 ? static_cast<int>(result.error) : 0;
+	return syscall_error(result);
 }
 
 int Sysdeps<Access>::operator()(const char *pathname, int mode) {
 	auto result = roxy_syscall2(ROXY_SYS_ACCESS, reinterpret_cast<long>(pathname), mode);
 
-	return result.value < 0 ? static_cast<int>(result.error) : 0;
+	return syscall_error(result);
 }
 
 } // namespace mlibc

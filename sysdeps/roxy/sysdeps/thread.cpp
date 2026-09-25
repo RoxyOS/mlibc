@@ -9,6 +9,8 @@
 #include <stdint.h>
 #include <sys/mman.h>
 
+#include "errors.hpp"
+
 extern "C" void __mlibc_enter_thread(void *entry, void *user_arg, Tcb *tcb) {
 	// Point the thread's FS base at its own TCB so get_current_tcb() works for this thread.
 	if (mlibc::sysdep<TcbSet>(tcb))
@@ -82,8 +84,8 @@ int Sysdeps<Clone>::operator()(void *tcb, pid_t *pid_out, void *stack) {
 		),
 		reinterpret_cast<roxy_syscall_word_t>(stack)
 	);
-	if (result.value < 0)
-		return static_cast<int>(result.error);
+	if (int error = syscall_error(result); error)
+		return error;
 
 	*pid_out = static_cast<pid_t>(result.value);
 	return 0;
