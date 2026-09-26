@@ -75,7 +75,7 @@ struct cmsghdr {
  * duplicate labels would not compile; the kernel reports them as unsupported all the same, like
  * every other family it cannot serve. */
 #define ROXY_AF_BASE 0x100
-#define ROXY_AF_UNSUPPORTED 0x80
+#define ROXY_AF_UNSUPPORTED (1 << 7)
 
 /* Linux's type word uses bits 0-3, 11 (`SOCK_NONBLOCK`), and 19 (`SOCK_CLOEXEC`), so 1 << 12 is
  * free. The type occupies three bits from the base, with the two supported flags above them, and
@@ -87,7 +87,7 @@ struct cmsghdr {
 
 /* Linux's `SO_*` stop at 83, so 0x80 is not one of them. */
 #define ROXY_SO_BASE 0x100
-#define ROXY_SO_UNSUPPORTED 0x80
+#define ROXY_SO_UNSUPPORTED (1 << 7)
 
 /* Linux's levels are its `IPPROTO_*` values, whose maximum is 263. */
 #define ROXY_SOL_BASE (1 << 10)
@@ -98,7 +98,7 @@ struct cmsghdr {
 #define ROXY_MSG_UNSUPPORTED (1 << 16)
 
 /* Linux's `SCM_*` are 1 and 2, so 0x80 is not one of them. */
-#define ROXY_SCM_UNSUPPORTED 0x80
+#define ROXY_SCM_UNSUPPORTED (1 << 7)
 
 /* Ancillary data passing is not implemented, so every `SCM_*` is the marker. */
 #define SCM_RIGHTS ROXY_SCM_UNSUPPORTED

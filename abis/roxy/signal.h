@@ -76,7 +76,7 @@ static_assert(__builtin_offsetof(siginfo_t, si_addr) == 32);
  */
 #define ROXY_SA_BASE 0x100
 /* Linux uses no bit 7 for its flags, so 0x80 is not one of them. */
-#define ROXY_SA_UNSUPPORTED 0x80
+#define ROXY_SA_UNSUPPORTED (1 << 7)
 
 /* Do not send `SIGCHLD` when a child stops or continues. */
 #define SA_NOCLDSTOP ROXY_SA_UNSUPPORTED
